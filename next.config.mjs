@@ -20,8 +20,7 @@ const nextConfig = {
   // Performance optimizations
   compress: true, // Enable gzip compression
   poweredByHeader: false, // Remove X-Powered-By header for security
-  // Optimize production builds
-  swcMinify: true,
+  // Note: swcMinify is enabled by default in Next.js 15, no need to specify
   // Reduce bundle size
   experimental: {
     optimizePackageImports: ['lucide-react'],

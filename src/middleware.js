@@ -11,22 +11,22 @@ const getAllowedOrigin = (origin) => {
     // Add your mobile app origins here
   ].filter(Boolean);
 
-  // If no origin specified, allow for mobile apps (but restrict in production)
+  // If no origin specified, restrict in production
   if (!origin) {
-    return process.env.NODE_ENV === 'production' ? null : '*';
+    return process.env.NODE_ENV === 'production' ? null : 'http://localhost:3000';
   }
 
   // Check if origin is allowed
-  if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+  if (allowedOrigins.includes(origin)) {
     return origin;
   }
 
-  // In production, be strict
+  // In production, be strict - no wildcards
   if (process.env.NODE_ENV === 'production') {
     return null;
   }
 
-  // In development, allow localhost
+  // In development, allow localhost only
   if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
     return origin;
   }

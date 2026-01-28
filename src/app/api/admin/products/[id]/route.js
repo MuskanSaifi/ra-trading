@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Product from "@/models/Product";
 import { connectDB } from "@/lib/dbConnect";
 import { v2 as cloudinary } from "cloudinary";
+import { requireAdminAuth, validateFile, validateImageBuffer } from "@/lib/authHelpers";
 
 export const runtime = "nodejs";
 
@@ -34,7 +35,7 @@ async function uploadToCloudinary(fileBuffer, folder = "products") {
 /* ===========================
  ✅ GET → Single Product
 =========================== */
-export async function GET(req, { params }) {
+export const GET = requireAdminAuth(async (req, { params }) => {
   try {
     await connectDB();
 
@@ -52,12 +53,12 @@ export async function GET(req, { params }) {
     console.error("GET ERROR:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
+});
 
 /* ===========================
  ✅ PUT → Update Product
 =========================== */
-export async function PUT(req, { params }) {
+export const PUT = requireAdminAuth(async (req, { params }) => {
   try {
     await connectDB();
 
@@ -106,13 +107,46 @@ export async function PUT(req, { params }) {
       if (img.public_id) await cloudinary.uploader.destroy(img.public_id);
     }
 
-    // ✅ New image upload
+    // ✅ New image upload with validation
     const newFiles = formData.getAll("images");
+    
+    // Limit total images (existing + new)
+    const totalImages = existingImages.length + newFiles.length;
+    if (totalImages > 10) {
+      return NextResponse.json(
+        { success: false, error: "Maximum 10 images allowed per product" },
+        { status: 400 }
+      );
+    }
+
     const newImages = [];
 
     for (const file of newFiles) {
-      if (file && file.name) {
+      if (file && file.name && file.size > 0) {
+        // Validate file
+        const fileValidation = validateFile(file, {
+          maxSize: 5 * 1024 * 1024, // 5MB
+          allowedTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp"],
+        });
+
+        if (!fileValidation.valid) {
+          return NextResponse.json(
+            { success: false, error: fileValidation.error },
+            { status: 400 }
+          );
+        }
+
         const buffer = Buffer.from(await file.arrayBuffer());
+        
+        // Validate image buffer (check magic bytes)
+        const bufferValidation = validateImageBuffer(buffer);
+        if (!bufferValidation.valid) {
+          return NextResponse.json(
+            { success: false, error: bufferValidation.error },
+            { status: 400 }
+          );
+        }
+
         const upload = await uploadToCloudinary(buffer, "products");
         newImages.push({ url: upload.secure_url, public_id: upload.public_id });
       }
@@ -136,12 +170,12 @@ export async function PUT(req, { params }) {
     console.error("PUT ERROR:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
+});
 
 /* ===========================
  ✅ DELETE → Remove Product
 =========================== */
-export async function DELETE(req, { params }) {
+export const DELETE = requireAdminAuth(async (req, { params }) => {
   try {
     await connectDB();
 
@@ -165,4 +199,4 @@ export async function DELETE(req, { params }) {
     console.error("DELETE ERROR:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
+});

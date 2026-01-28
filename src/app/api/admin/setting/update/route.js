@@ -4,8 +4,10 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import AdminSetting from "@/models/AdminSetting";
 import { connectDB } from "@/lib/dbConnect";
+import { requireAdminAuth } from "@/lib/authHelpers";
 
-export async function POST(req) {
+// 🔒 CRITICAL: This endpoint must be protected - it can change admin password!
+export const POST = requireAdminAuth(async (req) => {
   try {
     await connectDB();
     const { profile, security, site } = await req.json();
@@ -63,4 +65,4 @@ export async function POST(req) {
       { status: 500 }
     );
   }
-}
+});

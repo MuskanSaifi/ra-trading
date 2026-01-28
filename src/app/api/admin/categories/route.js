@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import Category from "@/models/Category";
 import { connectDB } from "@/lib/dbConnect";
 import { v2 as cloudinary } from "cloudinary";
+import { requireAdminAuth, validateFile, validateImageBuffer } from "@/lib/authHelpers";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -12,7 +13,7 @@ cloudinary.config({
 });
 
 // ✅ GET -> All categories
-export async function GET() {
+export const GET = requireAdminAuth(async () => {
   try {
     await connectDB();
     const categories = await Category.find().sort({ createdAt: -1 });
@@ -20,10 +21,10 @@ export async function GET() {
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
+});
 
 // ✅ POST -> Add new category
-export async function POST(req) {
+export const POST = requireAdminAuth(async (req) => {
   try {
     await connectDB();
 
@@ -31,8 +32,31 @@ export async function POST(req) {
     const categoryData = JSON.parse(formData.get("data"));
 
     const file = formData.get("image");
-    if (file && file.name) {
+    if (file && file.name && file.size > 0) {
+      // Validate file
+      const fileValidation = validateFile(file, {
+        maxSize: 5 * 1024 * 1024, // 5MB
+        allowedTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp"],
+      });
+
+      if (!fileValidation.valid) {
+        return NextResponse.json(
+          { success: false, error: fileValidation.error },
+          { status: 400 }
+        );
+      }
+
       const buffer = Buffer.from(await file.arrayBuffer());
+      
+      // Validate image buffer
+      const bufferValidation = validateImageBuffer(buffer);
+      if (!bufferValidation.valid) {
+        return NextResponse.json(
+          { success: false, error: bufferValidation.error },
+          { status: 400 }
+        );
+      }
+
       const imageData = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: "categories" },
@@ -51,6 +75,6 @@ export async function POST(req) {
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
+});
 
 

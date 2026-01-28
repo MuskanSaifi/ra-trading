@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import User from "@/models/User";
+import { requireAdminAuth } from "@/lib/authHelpers";
+import { sanitizeSearchQuery } from "@/lib/apiHelpers";
 
 // GET: list users with search & pagination
-export async function GET(req) {
+export const GET = requireAdminAuth(async (req) => {
   try {
     await connectDB();
-    const { search, page = 1, limit = 10 } = Object.fromEntries(req.nextUrl.searchParams);
+    const { searchParams } = new URL(req.url);
+    const rawSearch = searchParams.get("search") || "";
+    const search = sanitizeSearchQuery(rawSearch, 50); // Sanitize to prevent ReDoS
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "10")), 100);
 
     const query = {};
-    if (search) {
+    if (search && search.length > 2) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
@@ -35,11 +41,11 @@ export async function GET(req) {
     console.error("Error fetching users:", err);
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
-}
+});
 
 
 // DELETE: delete a user
-export async function DELETE(req) {
+export const DELETE = requireAdminAuth(async (req) => {
   try {
     await connectDB();
     const { id } = Object.fromEntries(req.nextUrl.searchParams);
@@ -54,10 +60,10 @@ export async function DELETE(req) {
     console.error("Error deleting user:", err);
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
-}
+});
 
 // PATCH: update user role or info
-export async function PATCH(req) {
+export const PATCH = requireAdminAuth(async (req) => {
   try {
     await connectDB();
     const { id, updates } = await req.json();
@@ -71,4 +77,4 @@ export async function PATCH(req) {
     console.error("Error updating user:", err);
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
-}
+});

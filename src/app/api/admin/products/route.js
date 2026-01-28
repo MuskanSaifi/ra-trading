@@ -5,6 +5,7 @@ import Category from "@/models/Category";
 import { connectDB } from "@/lib/dbConnect";
 import { v2 as cloudinary } from "cloudinary";
 import { sanitizeSearchQuery, sanitizeInput, validateBodySize } from "@/lib/apiHelpers";
+import { requireAdminAuth, validateFile, validateImageBuffer } from "@/lib/authHelpers";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -26,7 +27,7 @@ async function uploadToCloudinary(fileBuffer, folder = "products") {
   });
 }
 
-export async function GET(req) {
+export const GET = requireAdminAuth(async (req) => {
   try {
     await connectDB();
     
@@ -102,11 +103,11 @@ export async function GET(req) {
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
-}
+});
 
 
 // ✅ POST -> Add product (without video)
-export async function POST(req) {
+export const POST = requireAdminAuth(async (req) => {
   try {
     await connectDB();
 
@@ -142,12 +143,43 @@ export async function POST(req) {
       );
     }
 
-    // Upload images (max 5)
+    // Upload images with validation (max 10)
     const files = formData.getAll("images");
+    
+    if (files.length > 10) {
+      return NextResponse.json(
+        { success: false, error: "Maximum 10 images allowed" },
+        { status: 400 }
+      );
+    }
+
     const imageUrls = [];
     for (const file of files) {
+      // Validate file
+      const fileValidation = validateFile(file, {
+        maxSize: 5 * 1024 * 1024, // 5MB
+        allowedTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp"],
+      });
+
+      if (!fileValidation.valid) {
+        return NextResponse.json(
+          { success: false, error: fileValidation.error },
+          { status: 400 }
+        );
+      }
+
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
+      
+      // Validate image buffer (check magic bytes)
+      const bufferValidation = validateImageBuffer(buffer);
+      if (!bufferValidation.valid) {
+        return NextResponse.json(
+          { success: false, error: bufferValidation.error },
+          { status: 400 }
+        );
+      }
+
       const url = await uploadToCloudinary(buffer, "products");
       imageUrls.push(url);
     }
@@ -177,4 +209,4 @@ export async function POST(req) {
       { status: 500 }
     );
   }
-}
+});

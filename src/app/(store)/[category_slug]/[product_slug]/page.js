@@ -1,47 +1,79 @@
 import React from "react";
 import ProductActions from "./ProductActions";
 import SuggestedProducts from "@/components/shop/SuggestedProducts";
+import { getProductBySlugs, getAllProducts, getAllCategories } from "@/lib/staticData";
+import { notFound } from "next/navigation";
+import { Metadata } from "next";
 
-async function getProduct(category_slug, product_slug) {
-  // Use absolute URL for server-side fetch
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+// ISR: Revalidate every 60 seconds (1 minute)
+export const revalidate = 60;
+
+// Generate static params for all products at build time
+export async function generateStaticParams() {
+  const categories = await getAllCategories();
+  const products = await getAllProducts();
   
-  try {
-    const res = await fetch(
-      `${baseUrl}/api/store/products/${category_slug}/${product_slug}`,
-      { 
-        cache: "no-store",
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }
+  // Create params for each product with its category
+  const params = [];
+  
+  for (const product of products) {
+    const category = categories.find(cat => 
+      cat._id.toString() === product.category?._id?.toString() || 
+      cat._id.toString() === product.category?.toString()
     );
-
-    if (!res.ok) {
-      return { success: false, message: "Product not found" };
+    
+    if (category && product.slug) {
+      params.push({
+        category_slug: category.slug,
+        product_slug: product.slug,
+      });
     }
-
-    return await res.json();
-  } catch (error) {
-    console.error("Error fetching product:", error);
-    return { success: false, message: "Failed to fetch product" };
   }
+  
+  return params;
+}
+
+// Generate metadata for SEO
+export async function generateMetadata({ params }) {
+  const { category_slug, product_slug } = await params;
+  const { product } = await getProductBySlugs(category_slug, product_slug);
+  
+  if (!product) {
+    return {
+      title: "Product Not Found",
+    };
+  }
+
+  const price = product.salePrice || product.price;
+  const imageUrl = product.images?.[0]?.url;
+
+  return {
+    title: `${product.name} - Shree Rama Trading`,
+    description: product.description || `Buy ${product.name} at ₹${price}. ${product.description || 'Quality products at best prices.'}`,
+    openGraph: {
+      title: `${product.name} - Shree Rama Trading`,
+      description: product.description || `Buy ${product.name} at ₹${price}`,
+      images: imageUrl ? [imageUrl] : [],
+      type: "product",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description: product.description || `Buy ${product.name} at ₹${price}`,
+      images: imageUrl ? [imageUrl] : [],
+    },
+  };
 }
 
 export default async function ProductPage({ params }) {
   const { category_slug, product_slug } = await params;
+  const { product } = await getProductBySlugs(category_slug, product_slug);
 
-  const data = await getProduct(category_slug, product_slug);
-
-  if (!data?.success) {
-    return (
-      <h2 className="text-center text-red-500 mt-10 text-xl font-semibold">
-        Product Not Found
-      </h2>
-    );
+  // If product not found, show 404
+  if (!product) {
+    notFound();
   }
 
-  const product = data.product;
   const price = product.salePrice || product.price;
 
   return (

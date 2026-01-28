@@ -3,6 +3,7 @@
 import { connectDB } from "@/lib/dbConnect";
 import Product from "@/models/Product";
 import { v2 as cloudinary } from "cloudinary";
+import { requireAdminAuth, validateFile, validateImageBuffer } from "@/lib/authHelpers";
 
 // ✅ Slug helper
 const slugify = (text) =>
@@ -33,7 +34,7 @@ async function uploadToCloudinary(buffer, folder = "products") {
   });
 }
 
-export const POST = async (req) => {
+export const POST = requireAdminAuth(async (req) => {
   try {
     await connectDB();
 
@@ -119,12 +120,43 @@ export const POST = async (req) => {
         : Date.now(),
     });
 
-    // ✅ Upload images
+    // ✅ Upload images with validation
     const images = formData.getAll("images");
+
+    // Limit number of images
+    if (images.length > 10) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Maximum 10 images allowed" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     for (const img of images) {
       if (img && img.size > 0) {
+        // Validate file
+        const fileValidation = validateFile(img, {
+          maxSize: 5 * 1024 * 1024, // 5MB
+          allowedTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp"],
+        });
+
+        if (!fileValidation.valid) {
+          return new Response(
+            JSON.stringify({ success: false, error: fileValidation.error }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
         const buffer = Buffer.from(await img.arrayBuffer());
+        
+        // Validate image buffer (check magic bytes)
+        const bufferValidation = validateImageBuffer(buffer);
+        if (!bufferValidation.valid) {
+          return new Response(
+            JSON.stringify({ success: false, error: bufferValidation.error }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
         const result = await uploadToCloudinary(buffer);
 
         product.images.push({
@@ -150,4 +182,4 @@ export const POST = async (req) => {
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
-};
+});

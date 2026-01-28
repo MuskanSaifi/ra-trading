@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import { v2 as cloudinary } from "cloudinary";
 import Review from "@/models/Review";
+import { requireAdminAuth, validateFile, validateImageBuffer } from "@/lib/authHelpers";
 
 // 🔹 Cloudinary Config
 cloudinary.config({
@@ -13,7 +14,7 @@ cloudinary.config({
 // ======================================
 // 📌 GET → Get All Reviews
 // ======================================
-export async function GET(req) {
+export const GET = requireAdminAuth(async (req) => {
   try {
     await connectDB();
     
@@ -48,12 +49,12 @@ export async function GET(req) {
       { status: 500 }
     );
   }
-}
+});
 
 // ======================================
 // 📌 POST → Create Review
 // ======================================
-export async function POST(req) {
+export const POST = requireAdminAuth(async (req) => {
   try {
     await connectDB();
 
@@ -72,10 +73,32 @@ export async function POST(req) {
 
     const file = formData.get("photo");
 
-    // 🔥 Upload image if exists
+    // 🔥 Upload image if exists with validation
     if (file && file.size > 0) {
+      // Validate file
+      const fileValidation = validateFile(file, {
+        maxSize: 5 * 1024 * 1024, // 5MB
+        allowedTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp"],
+      });
+
+      if (!fileValidation.valid) {
+        return NextResponse.json(
+          { success: false, error: fileValidation.error },
+          { status: 400 }
+        );
+      }
+
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
+
+      // Validate image buffer
+      const bufferValidation = validateImageBuffer(buffer);
+      if (!bufferValidation.valid) {
+        return NextResponse.json(
+          { success: false, error: bufferValidation.error },
+          { status: 400 }
+        );
+      }
 
       const uploaded = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -103,4 +126,4 @@ export async function POST(req) {
       { status: 500 }
     );
   }
-}
+});

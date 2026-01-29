@@ -10,7 +10,7 @@ export default function Reviews() {
   useEffect(() => {
     async function loadReviews() {
       try {
-        const res = await fetch("/api/admin/reviews", {
+        const res = await fetch("/api/store/reviews", {
           next: { revalidate: 60 },
         });
         const data = await res.json();

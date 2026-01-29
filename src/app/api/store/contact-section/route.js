@@ -15,16 +15,18 @@ export async function GET() {
     const data = await ContactSection.findOne().lean();
 
     if (!data) {
-      // Return default/empty data instead of 404 to prevent errors
+      // Return default/empty data instead of 404 to prevent errors (no hardcoded brand name)
       return jsonResponse({
         success: true,
         data: {
           title: "E-Commerce Store",
+          companyName: "E-Commerce Store",
           description: "Your trusted shopping destination",
           address: "",
           phone: "",
           email: "",
           logo: { url: "" },
+          favicon: { url: "" },
           socialLinks: []
         },
       }, 200, {
@@ -47,11 +49,13 @@ export async function GET() {
       success: true,
       data: {
         title: "E-Commerce Store",
+        companyName: "E-Commerce Store",
         description: "Your trusted shopping destination",
         address: "",
         phone: "",
         email: "",
         logo: { url: "" },
+        favicon: { url: "" },
         socialLinks: []
       },
     }, 200);

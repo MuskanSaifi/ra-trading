@@ -6,6 +6,47 @@
 import { connectDB } from "./dbConnect";
 import Category from "@/models/Category";
 import Product from "@/models/Product";
+import ContactSection from "@/models/ContactSection";
+
+/**
+ * Get contact/site section (company name, description, logo, favicon) for SEO & metadata
+ * Use this in generateMetadata and layout - no hardcoded company name
+ */
+export async function getContactSection() {
+  try {
+    await connectDB();
+    const data = await ContactSection.findOne().lean();
+    if (!data) {
+      return {
+        siteName: "E-Commerce Store",
+        title: "E-Commerce Store",
+        companyName: "E-Commerce Store",
+        description: "Your trusted shopping destination",
+        logo: { url: "" },
+        favicon: { url: "" },
+      };
+    }
+    const siteName = data.companyName || data.title || "E-Commerce Store";
+    return {
+      siteName,
+      title: data.title,
+      companyName: data.companyName || data.title,
+      description: data.description || "Your trusted shopping destination",
+      logo: data.logo || { url: "" },
+      favicon: data.favicon || { url: "" },
+    };
+  } catch (error) {
+    console.error("Error fetching contact section:", error);
+    return {
+      siteName: "E-Commerce Store",
+      title: "E-Commerce Store",
+      companyName: "E-Commerce Store",
+      description: "Your trusted shopping destination",
+      logo: { url: "" },
+      favicon: { url: "" },
+    };
+  }
+}
 
 /**
  * Get all active categories for static generation

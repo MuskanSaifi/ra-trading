@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
 
 const AboutSection = () => {
   const [about, setAbout] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL ||
@@ -66,8 +66,8 @@ useEffect(() => {
           </div>
         </motion.div>
 
-        {/* RIGHT */}
-        {about?.image?.url && (
+        {/* RIGHT - use img with onError to handle 404/deleted Cloudinary images */}
+        {about?.image?.url && !imageError && (
           <motion.div
             initial={{ opacity: 0, x: 60 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -75,11 +75,11 @@ useEffect(() => {
             viewport={{ once: true }}
             className="relative w-full h-[450px]"
           >
-            <Image
+            <img
               src={about.image.url}
-              alt="About Image"
-              fill
-              className="rounded-xl shadow-xl object-cover"
+              alt="About us"
+              className="rounded-xl shadow-xl object-cover w-full h-full"
+              onError={() => setImageError(true)}
             />
           </motion.div>
         )}

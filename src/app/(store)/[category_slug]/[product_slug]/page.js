@@ -1,9 +1,8 @@
 import React from "react";
 import ProductActions from "./ProductActions";
 import SuggestedProducts from "@/components/shop/SuggestedProducts";
-import { getProductBySlugs, getAllProducts, getAllCategories } from "@/lib/staticData";
+import { getProductBySlugs, getAllProducts, getAllCategories, getContactSection } from "@/lib/staticData";
 import { notFound } from "next/navigation";
-import { Metadata } from "next";
 
 // ISR: Revalidate every 60 seconds (1 minute)
 export const revalidate = 60;
@@ -33,9 +32,11 @@ export async function generateStaticParams() {
   return params;
 }
 
-// Generate metadata for SEO
+// Generate metadata for SEO - site name from API
 export async function generateMetadata({ params }) {
   const { category_slug, product_slug } = await params;
+  const contact = await getContactSection();
+  const siteName = contact.siteName;
   const { product } = await getProductBySlugs(category_slug, product_slug);
   
   if (!product) {
@@ -48,10 +49,10 @@ export async function generateMetadata({ params }) {
   const imageUrl = product.images?.[0]?.url;
 
   return {
-    title: `${product.name} - Shree Rama Trading`,
-    description: product.description || `Buy ${product.name} at ₹${price}. ${product.description || 'Quality products at best prices.'}`,
+    title: `${product.name} - ${siteName}`,
+    description: product.description || `Buy ${product.name} at ₹${price}. Quality products at ${siteName}.`,
     openGraph: {
-      title: `${product.name} - Shree Rama Trading`,
+      title: `${product.name} - ${siteName}`,
       description: product.description || `Buy ${product.name} at ₹${price}`,
       images: imageUrl ? [imageUrl] : [],
       type: "product",

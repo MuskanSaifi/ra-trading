@@ -152,9 +152,9 @@ export default function Navbar() {
         {/* LOGO */}
         <Link href="/" className="flex items-center gap-2">
           {headerInfo?.logo?.url ? (
-            <Image src={headerInfo.logo.url} height={50} width={50} alt="logo" />
+            <Image src={headerInfo.logo.url} height={50} width={50} alt={headerInfo?.title || headerInfo?.companyName || "Logo"} />
           ) : (
-            <span className="text-2xl font-extrabold">MyShop</span>
+            <span className="text-2xl font-extrabold">{headerInfo?.title || headerInfo?.companyName || "Store"}</span>
           )}
         </Link>
 

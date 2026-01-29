@@ -1,7 +1,6 @@
 import ProductCard from "@/components/shop/ProductCard";
-import { getProductsByCategory, getAllCategories } from "@/lib/staticData";
+import { getProductsByCategory, getAllCategories, getContactSection } from "@/lib/staticData";
 import { notFound } from "next/navigation";
-import { Metadata } from "next";
 
 // ISR: Revalidate every 60 seconds (1 minute)
 export const revalidate = 60;
@@ -15,9 +14,11 @@ export async function generateStaticParams() {
   }));
 }
 
-// Generate metadata for SEO
+// Generate metadata for SEO - site name from API
 export async function generateMetadata({ params }) {
   const { category_slug } = await params;
+  const contact = await getContactSection();
+  const siteName = contact.siteName;
   const { category } = await getProductsByCategory(category_slug);
   
   if (!category) {
@@ -27,10 +28,10 @@ export async function generateMetadata({ params }) {
   }
 
   return {
-    title: `${category.name} - Shree Rama Trading`,
-    description: category.description || `Browse ${category.name} products at Shree Rama Trading`,
+    title: `${category.name} - ${siteName}`,
+    description: category.description || `Browse ${category.name} products at ${siteName}`,
     openGraph: {
-      title: `${category.name} - Shree Rama Trading`,
+      title: `${category.name} - ${siteName}`,
       description: category.description || `Browse ${category.name} products`,
       images: category.image?.url ? [category.image.url] : [],
     },

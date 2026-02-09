@@ -55,7 +55,8 @@ export async function generateMetadata({ params }) {
       title: `${product.name} - ${siteName}`,
       description: product.description || `Buy ${product.name} at ₹${price}`,
       images: imageUrl ? [imageUrl] : [],
-      type: "product",
+      // Next.js 16 strict OpenGraph types: use "website"
+      type: "website",
     },
     twitter: {
       card: "summary_large_image",

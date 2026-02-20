@@ -8,9 +8,10 @@ import { getContactSection } from "@/lib/staticData";
 // Metadata from API - no hardcoded company name
 export async function generateMetadata() {
   const contact = await getContactSection();
-  const siteName = contact.siteName;
-  const description = contact.description;
-  const faviconUrl = contact.favicon?.url;
+
+  const siteName = contact?.siteName || "Store";
+  const description = contact?.description || "";
+  const faviconUrl = contact?.favicon?.url;
 
   return {
     title: {
@@ -18,7 +19,18 @@ export async function generateMetadata() {
       template: `%s | ${siteName}`,
     },
     description,
-    icons: faviconUrl ? { icon: faviconUrl } : undefined,
+    icons: faviconUrl
+      ? {
+          icon: [
+            {
+              url: faviconUrl,
+              type: "image/png",
+            },
+          ],
+          shortcut: faviconUrl,
+          apple: faviconUrl,
+        }
+      : undefined,
     openGraph: {
       title: siteName,
       description,

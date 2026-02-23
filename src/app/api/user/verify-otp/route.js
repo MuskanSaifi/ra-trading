@@ -58,13 +58,24 @@ export async function POST(req) {
     }
 
     // OTP validate
-    const validOtp = phone === "9999999999" ? "999999" : user.otp;
-    if (otp !== validOtp || user.otpExpiresAt < new Date()) {
-      return NextResponse.json(
-        { success: false, message: "Invalid or expired OTP." },
-        { status: 401 }
-      );
-    }
+let isValid = false;
+
+// ✅ Special test number logic (Play Store Review)
+if (phone === "9999999999" && (otp === "999999" || otp === "123456")) {
+  isValid = true; // Always allow both OTPs
+}
+
+// ✅ Normal user logic
+else if (otp === user.otp && user.otpExpiresAt > new Date()) {
+  isValid = true;
+}
+
+if (!isValid) {
+  return NextResponse.json(
+    { success: false, message: "Invalid or expired OTP." },
+    { status: 401 }
+  );
+}
 
     // 🔹 Upload image only if provided
     if (profileFile && profileFile.size > 0) {

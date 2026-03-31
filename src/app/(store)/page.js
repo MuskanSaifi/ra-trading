@@ -4,6 +4,7 @@ import Category from "./all-categories/page";
 import HomeFeatureBar from "@/components/store/HomeFeatureBar";
 import HomePromoBanners from "@/components/store/HomePromoBanners";
 import HomeProductTabs from "@/components/store/HomeProductTabs";
+import HomeLatestBlogs from "@/components/store/HomeLatestBlogs";
 import AboutSection from "@/components/AboutSection";
 import Reviews from "@/components/Reviews";
 import FAQ from "@/components/FAQ";
@@ -37,6 +38,7 @@ export default function Home() {
       <HomeFeatureBar />
       <HomePromoBanners />
       <HomeProductTabs />
+      <HomeLatestBlogs />
       <AboutSection/>
       <Reviews/>
       <FAQ/>

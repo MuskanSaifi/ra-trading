@@ -118,7 +118,7 @@ export default function Footer() {
           <h3 className="text-lg font-semibold text-white mb-4">Support</h3>
           <ul className="space-y-2 text-sm">
             <li><a href="/faq" className="hover:text-white transition">FAQ</a></li>
-            <li><a href="/shipping-and-returns" className="hover:text-white transition">Shipping & Returns</a></li>
+            <li><a href="/refund-and-return-policy" className="hover:text-white transition">Refund & Return Policy</a></li>
             <li><a href="/privacy-policy" className="hover:text-white transition">Privacy Policy</a></li>
             <li><a href="/terms-and-conditions" className="hover:text-white transition">Terms & Conditions</a></li>
           </ul>

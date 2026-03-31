@@ -22,6 +22,7 @@ import {
   Star,
   HelpCircle,
   SlidersHorizontal,
+  FileText,
 } from "lucide-react";
 
 const navItems = [
@@ -49,6 +50,7 @@ const navItems = [
   { name: "Contact Us", href: "/admin-dashboard/contact-us", icon: MapPin },
   { name: "Reviews", href: "/admin-dashboard/reviews", icon: Star },
   { name: "FAQ", href: "/admin-dashboard/faq", icon: HelpCircle },
+  { name: "Policies", href: "/admin-dashboard/policies", icon: FileText },
   { name: "Settings", href: "/admin-dashboard/settings", icon: SlidersHorizontal },
 ];
 

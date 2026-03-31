@@ -68,11 +68,38 @@ export function rateLimit(options = {}) {
 }
 
 /**
- * Strict rate limiter for sensitive endpoints (login, OTP, etc.)
+ * Strict rate limiter for sensitive endpoints (password login, contact form, etc.)
+ * Note: OTP flows use otpSendRateLimit / otpVerifyRateLimit so users are not locked out after a few tries.
  */
 export const strictRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 5 // Only 5 requests per 15 minutes
+  maxRequests: 5,
+});
+
+/** SMS OTP send — separate bucket from verify so retries are usable */
+export const otpSendRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 15,
+  keyGenerator: (req) => {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = forwarded
+      ? forwarded.split(",")[0].trim()
+      : req.headers.get("x-real-ip") || "unknown";
+    return `otp-send:${ip}`;
+  },
+});
+
+/** OTP verify — allow more attempts (typos, expiry) */
+export const otpVerifyRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 40,
+  keyGenerator: (req) => {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = forwarded
+      ? forwarded.split(",")[0].trim()
+      : req.headers.get("x-real-ip") || "unknown";
+    return `otp-verify:${ip}`;
+  },
 });
 
 /**

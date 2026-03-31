@@ -45,9 +45,21 @@ export default function LoginClient() {
       });
 
       const data = await res.json();
-      data.success
-        ? (setOtpSent(true), showMsg(`OTP sent to ${phone}`, "success"))
-        : showMsg(data.message);
+      if (data.success) {
+        setOtpSent(true);
+        showMsg(`OTP sent to ${phone}`, "success");
+      } else if (res.status === 429) {
+        const waitMin = data.retryAfter
+          ? Math.max(1, Math.ceil(Number(data.retryAfter) / 60))
+          : null;
+        showMsg(
+          waitMin
+            ? `${data.error || "Too many requests"} Retry in ~${waitMin} min.`
+            : data.error || data.message || "Too many requests. Try again later."
+        );
+      } else {
+        showMsg(data.message || data.error || "Could not send OTP");
+      }
     } catch {
       showMsg("Server error");
     }
@@ -67,8 +79,22 @@ export default function LoginClient() {
 
       const data = await res.json();
 
+      if (res.status === 429) {
+        const waitMin = data.retryAfter
+          ? Math.max(1, Math.ceil(Number(data.retryAfter) / 60))
+          : null;
+        showMsg(
+          waitMin
+            ? `${data.error || "Too many attempts"} Retry in ~${waitMin} min.`
+            : data.error || "Too many attempts. Try again later."
+        );
+        setLoading(false);
+        return;
+      }
+
       if (data.success && data.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
+        window.dispatchEvent(new Event("userAuthChanged"));
         showMsg("Login successful!", "success");
         setTimeout(() => router.replace(redirect), 600);
       } else {

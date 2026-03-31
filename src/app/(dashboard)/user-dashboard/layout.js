@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import Sidebar from "./components/Sidebar";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
+import UserDashboardShell from "./UserDashboardShell";
 import jwt from "jsonwebtoken";
 import "../../globals.css";
 import { connectDB } from "@/lib/dbConnect";
@@ -35,11 +35,10 @@ export default async function UserDashboardLayout({ children }) {
     return (
       <html lang="en">
         <body>
-          <Navbar />
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <main className="flex-1">{children}</main>
-          </div>
+          <header className="sticky top-0 z-50 w-full">
+            <Navbar />
+          </header>
+          <UserDashboardShell>{children}</UserDashboardShell>
           <Footer />
         </body>
       </html>

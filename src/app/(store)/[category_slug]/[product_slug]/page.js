@@ -1,6 +1,8 @@
 import React from "react";
+import Link from "next/link";
 import ProductActions from "./ProductActions";
 import SuggestedProducts from "@/components/shop/SuggestedProducts";
+import PageBanner from "@/components/store/PageBanner";
 import { getProductBySlugs, getAllProducts, getAllCategories, getContactSection } from "@/lib/staticData";
 import { notFound } from "next/navigation";
 
@@ -79,31 +81,66 @@ export default async function ProductPage({ params }) {
   const price = product.salePrice || product.price;
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        
-        <img
-          src={product.images?.[0]?.url}
-          alt={product.name}
-          className="w-full rounded-xl shadow-md border"
-        />
-
-        <div className="space-y-4">
-          <h1 className="text-4xl font-bold">{product.name}</h1>
-          <p className="text-gray-600">{product.description}</p>
-
-          <p className="text-3xl font-bold text-indigo-700">₹{price}</p>
-
-          {/* ⭐ Add to Wishlist + Add to Cart */}
-          <ProductActions product={product} />
-        </div>
-      </div>
-
-      {/* ⭐ Suggested Section */}
-      <SuggestedProducts
-        categorySlug={product.category?.slug}
-        currentProductId={product._id}
+    <div className="pb-16">
+      <PageBanner
+        accent="default"
+        title={product.name}
+        subtitle={product.category?.name ? `Category: ${product.category.name}` : ""}
+        crumbs={[
+          { label: "Home", href: "/" },
+          { label: "Shop", href: "/shop" },
+          {
+            label: product.category?.name || "Category",
+            href: product.category?.slug ? `/shop?category=${product.category.slug}` : "/shop",
+          },
+          { label: product.name },
+        ]}
       />
+
+      <div className="store-container py-10 md:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+          <div className="rounded-2xl overflow-hidden border border-[var(--store-border)] bg-white shadow-lg">
+            <img
+              src={product.images?.[0]?.url}
+              alt={product.name}
+              className="w-full object-cover max-h-[520px]"
+            />
+          </div>
+
+          <div className="space-y-5 lg:pt-4">
+            <p className="text-sm font-bold text-[var(--store-primary)] uppercase tracking-wide">
+              {product.brand?.name || "Featured product"}
+            </p>
+            <h1 className="text-3xl md:text-4xl font-black text-[var(--store-ink)] leading-tight">
+              {product.name}
+            </h1>
+            <p className="text-[var(--store-muted)] leading-relaxed">{product.description}</p>
+
+            <div className="flex flex-wrap items-baseline gap-3">
+              <span className="text-4xl font-black text-[var(--store-primary)]">₹{price}</span>
+              {product.discount > 0 && (
+                <span className="text-lg line-through text-gray-400">₹{product.price}</span>
+              )}
+            </div>
+
+            <div className="pt-2">
+              <ProductActions product={product} />
+            </div>
+
+            <Link
+              href="/shop"
+              className="inline-flex mt-4 text-sm font-bold text-[var(--store-ink)] border-b-2 border-[var(--store-primary)] hover:text-[var(--store-primary)]"
+            >
+              ← Back to shop
+            </Link>
+          </div>
+        </div>
+
+        <SuggestedProducts
+          categorySlug={product.category?.slug}
+          currentProductId={product._id}
+        />
+      </div>
     </div>
   );
 }

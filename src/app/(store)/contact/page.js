@@ -1,12 +1,16 @@
-import ContactSection from '@/components/ContactSection'
-import React from 'react'
+import ContactSection from "@/components/ContactSection";
+import PageBanner from "@/components/store/PageBanner";
 
-const page = () => {
+export default function ContactPage() {
   return (
     <div>
-      <ContactSection/>
+      <PageBanner
+        accent="contact"
+        title="Contact"
+        subtitle="Reach the team — we respond as soon as we can."
+        crumbs={[{ label: "Home", href: "/" }, { label: "Contact" }]}
+      />
+      <ContactSection />
     </div>
-  )
+  );
 }
-
-export default page

@@ -43,10 +43,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <header>
+        <header className="sticky top-0 z-50 w-full">
           <Navbar />
         </header>
-        <main className="main-container bg-white">
+        <main className="main-container min-h-[50vh] bg-[var(--store-surface)]">
           {children}
           <ViewCartFloatingButton />
         </main>

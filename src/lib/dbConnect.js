@@ -18,7 +18,7 @@ const connectDB = async () => {
       }
     }
     
-    await mongoose.connect(process.env.MONGODB_URI, {
+    const connectOptions = {
       maxPoolSize: 10, // Maintain up to 10 socket connections
       minPoolSize: 2, // Maintain minimum 2 connections for better performance
       serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
@@ -26,7 +26,14 @@ const connectDB = async () => {
       maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
       // Note: bufferMaxEntries and bufferCommands are not supported in Mongoose 8.x
       // Buffering is handled automatically by Mongoose
-    });
+    };
+    // If URI has no database path, MongoDB may use "test" — set MONGODB_DB=ratrading (or your DB name)
+    const dbName = process.env.MONGODB_DB?.trim();
+    if (dbName) {
+      connectOptions.dbName = dbName;
+    }
+
+    await mongoose.connect(process.env.MONGODB_URI, connectOptions);
     
     console.log("✅ MongoDB Connected");
   } catch (error) {

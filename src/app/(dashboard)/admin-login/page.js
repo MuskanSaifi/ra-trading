@@ -68,11 +68,13 @@ export default function AdminLoginPage() {
 
         <label className="block text-sm font-medium mb-1">Email</label>
         <input
-          type="email"
+          type="text"
+          inputMode="email"
+          autoComplete="username"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           className="w-full border rounded px-3 py-2 mb-3"
-          placeholder="admin@example.com"
+          placeholder="admin@rtrading.com"
         />
 
         <label className="block text-sm font-medium mb-1">Password</label>

@@ -1,8 +1,9 @@
 import ContactSection from "@/components/ContactSection";
 import Sections from "@/components/Sections";
-import ProductsList from "@/components/ProductsList";
 import Category from "./all-categories/page";
-import Flags from "@/components/shop/Flags";
+import HomeFeatureBar from "@/components/store/HomeFeatureBar";
+import HomePromoBanners from "@/components/store/HomePromoBanners";
+import HomeProductTabs from "@/components/store/HomeProductTabs";
 import AboutSection from "@/components/AboutSection";
 import Reviews from "@/components/Reviews";
 import FAQ from "@/components/FAQ";
@@ -33,8 +34,9 @@ export default function Home() {
     <div>
       <Sections section="landingpage-frontsection"/>
       <Category/>
-      <ProductsList limit={8} title="Featured Products" />
-      <Flags/>
+      <HomeFeatureBar />
+      <HomePromoBanners />
+      <HomeProductTabs />
       <AboutSection/>
       <Reviews/>
       <FAQ/>

@@ -9,10 +9,7 @@ const ContactSection = () => {
 
   const fetchContactData = async () => {
     try {
-      const res = await fetch("/api/store/contact-section", {
-        cache: 'force-cache', // Cache to reduce server load
-        next: { revalidate: 600 }, // Revalidate every 10 minutes
-      });
+      const res = await fetch("/api/store/contact-section", { cache: "no-store" });
 
       if (!res.ok) {
         throw new Error("API request failed");
@@ -67,8 +64,15 @@ const ContactSection = () => {
             />
           )}
 
-          <h2 className="text-3xl font-bold">{data.title}</h2>
-          <p className="text-gray-700">{data.description}</p>
+          <h2 className="text-3xl font-bold">
+            {data.title?.trim() || data.companyName?.trim() || "Contact us"}
+          </h2>
+          {data.subtitle?.trim() ? (
+            <p className="text-lg text-gray-600">{data.subtitle.trim()}</p>
+          ) : null}
+          {data.description?.trim() ? (
+            <p className="text-gray-700">{data.description.trim()}</p>
+          ) : null}
 
           <div className="space-y-2">
             {data.address && <p>📍 {data.address}</p>}

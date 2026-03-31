@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 
+/** Must match `<Sections section="…" />` on the storefront (e.g. home page). */
+const SECTION_OPTIONS = [
+  { value: "landingpage-frontsection", label: "Homepage hero" },
+];
+
 export default function BannerAdminPage() {
   const [banners, setBanners] = useState([]);
   const [open, setOpen] = useState(false);
@@ -26,18 +31,32 @@ export default function BannerAdminPage() {
   }, []);
 
   const handleSubmit = async () => {
+    const payload = {
+      _id: form._id,
+      title: form.title,
+      subtitle: form.subtitle,
+      section: form.section,
+      buttonText1: form.buttonText1,
+      buttonText2: form.buttonText2,
+    };
+
     const fd = new FormData();
-    fd.append("data", JSON.stringify(form));
+    fd.append("data", JSON.stringify(payload));
     if (form.image) fd.append("image", form.image);
 
     const endpoint = form._id
       ? `/api/admin/sections/${form._id}`
       : `/api/admin/sections`;
 
-    await fetch(endpoint, {
+    const res = await fetch(endpoint, {
       method: form._id ? "PUT" : "POST",
       body: fd,
     });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(json?.error || `Save failed (${res.status})`);
+      return;
+    }
 
     setOpen(false);
     resetForm();
@@ -49,7 +68,7 @@ export default function BannerAdminPage() {
       _id: null,
       title: "",
       subtitle: "",
-      section: "",
+      section: SECTION_OPTIONS[0]?.value || "landingpage-frontsection",
       buttonText1: "",
       buttonText2: "",
       image: null,
@@ -69,8 +88,12 @@ export default function BannerAdminPage() {
         <div className="flex flex-col md:flex-row justify-between mb-6 gap-3 items-center">
           <h2 className="text-xl font-semibold">All Banners</h2>
           <button
+            type="button"
             className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg transition"
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              resetForm();
+              setOpen(true);
+            }}
           >
             + Add Banner
           </button>
@@ -102,12 +125,32 @@ export default function BannerAdminPage() {
                 }
               />
 
-              <input
-                type="text"
-                value={form.section}
-                disabled
-                className="border p-2 w-full bg-gray-200 text-gray-500 cursor-not-allowed rounded-lg"
-              />
+              <label className="block text-sm font-medium text-gray-700">
+                Section (where it appears on the site)
+              </label>
+              <select
+                className="border p-2 w-full rounded-lg bg-white"
+                value={
+                  SECTION_OPTIONS.some((o) => o.value === form.section)
+                    ? form.section
+                    : form.section || SECTION_OPTIONS[0]?.value
+                }
+                onChange={(e) =>
+                  setForm({ ...form, section: e.target.value })
+                }
+              >
+                {form.section &&
+                  !SECTION_OPTIONS.some((o) => o.value === form.section) && (
+                    <option value={form.section}>
+                      {form.section} (current)
+                    </option>
+                  )}
+                {SECTION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label} ({opt.value})
+                  </option>
+                ))}
+              </select>
 
               <input
                 className="border p-2 w-full rounded-lg"

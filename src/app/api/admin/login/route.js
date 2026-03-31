@@ -9,29 +9,41 @@ import { connectDB } from "@/lib/dbConnect";
 export async function POST(req) {
   try {
     await connectDB();
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const emailRaw = typeof body.email === "string" ? body.email.trim() : "";
+    const password = typeof body.password === "string" ? body.password : "";
 
-    // Validate fields
-    if (!email || !password) {
+    if (!emailRaw || !password) {
       return NextResponse.json(
         { success: false, message: "Email and password required" },
         { status: 400 }
       );
     }
 
-    const admin = await AdminSetting.findOne({ siteAdminEmail: email });
+    const email = emailRaw.toLowerCase();
+
+    const admin = await AdminSetting.findOne({
+      siteAdminEmail: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") },
+    });
     if (!admin) {
       return NextResponse.json(
-        { success: false, message: "Email not found" },
-        { status: 400 }
+        { success: false, message: "Invalid email or password" },
+        { status: 401 }
       );
     }
 
     const isMatch = await bcrypt.compare(password, admin.passwordHash);
     if (!isMatch) {
       return NextResponse.json(
-        { success: false, message: "Wrong password" },
-        { status: 400 }
+        { success: false, message: "Invalid email or password" },
+        { status: 401 }
+      );
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return NextResponse.json(
+        { success: false, message: "Server misconfiguration: JWT_SECRET is not set" },
+        { status: 500 }
       );
     }
 

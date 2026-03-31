@@ -189,7 +189,8 @@ const handleSave = async () => {
       };
 
       setProfile(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser)); // <-- update localStorage
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      window.dispatchEvent(new Event("userAuthChanged"));
       setEditMode(false);
       showSuccess("Profile updated successfully");
     } else {

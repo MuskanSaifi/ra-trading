@@ -6,7 +6,7 @@
 import { connectDB } from "./dbConnect";
 import Category from "@/models/Category";
 import Product from "@/models/Product";
-import ContactSection from "@/models/ContactSection";
+import { getContactSectionDocument } from "@/lib/getContactSectionDoc";
 
 /**
  * Get contact/site section (company name, description, logo, favicon) for SEO & metadata
@@ -14,8 +14,7 @@ import ContactSection from "@/models/ContactSection";
  */
 export async function getContactSection() {
   try {
-    await connectDB();
-    const data = await ContactSection.findOne().lean();
+    const data = await getContactSectionDocument();
     if (!data) {
       return {
         siteName: "E-Commerce Store",
@@ -24,16 +23,24 @@ export async function getContactSection() {
         description: "Your trusted shopping destination",
         logo: { url: "" },
         favicon: { url: "" },
+        phone: "",
+        email: "",
+        address: "",
       };
     }
-    const siteName = data.companyName || data.title || "E-Commerce Store";
+    const siteName =
+      data.companyName || data.title || "E-Commerce Store";
     return {
       siteName,
-      title: data.title,
-      companyName: data.companyName || data.title,
-      description: data.description || "Your trusted shopping destination",
+      title: data.title || data.companyName,
+      companyName: data.companyName || data.title || siteName,
+      description:
+        data.description || "Your trusted shopping destination",
       logo: data.logo || { url: "" },
       favicon: data.favicon || { url: "" },
+      phone: data.phone || "",
+      email: data.email || "",
+      address: data.address || "",
     };
   } catch (error) {
     console.error("Error fetching contact section:", error);
@@ -44,6 +51,9 @@ export async function getContactSection() {
       description: "Your trusted shopping destination",
       logo: { url: "" },
       favicon: { url: "" },
+      phone: "",
+      email: "",
+      address: "",
     };
   }
 }

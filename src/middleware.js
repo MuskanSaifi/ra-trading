@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
-import { rateLimit, strictRateLimit, moderateRateLimit, looseRateLimit } from '@/lib/rateLimit';
+import {
+  strictRateLimit,
+  moderateRateLimit,
+  looseRateLimit,
+  otpSendRateLimit,
+  otpVerifyRateLimit,
+} from '@/lib/rateLimit';
 
 // Allowed origins for CORS (security improvement)
 const getAllowedOrigin = (origin) => {
@@ -66,15 +72,19 @@ export async function middleware(request) {
       return new NextResponse(null, { status: 200, headers });
     }
 
-    // Rate limiting based on endpoint
     const pathname = request.nextUrl.pathname;
     let rateLimiter;
 
-    // Strict rate limiting for sensitive endpoints
-    if (
+    const devRelaxOtp =
+      process.env.NODE_ENV !== 'production' &&
+      process.env.RATE_LIMIT_STRICT_OTP !== 'true';
+
+    if (pathname.includes('/send-otp')) {
+      rateLimiter = devRelaxOtp ? looseRateLimit : otpSendRateLimit;
+    } else if (pathname.includes('/verify-otp')) {
+      rateLimiter = devRelaxOtp ? looseRateLimit : otpVerifyRateLimit;
+    } else if (
       pathname.includes('/login') ||
-      pathname.includes('/send-otp') ||
-      pathname.includes('/verify-otp') ||
       pathname.includes('/contact-form')
     ) {
       rateLimiter = strictRateLimit;

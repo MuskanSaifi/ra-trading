@@ -26,7 +26,7 @@ const SocialLinkSchema = new mongoose.Schema(
 
 const ContactSectionSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
+    title: { type: String, default: "" },
     subtitle: { type: String, default: "" },
     description: { type: String, default: "" },
     companyName: {

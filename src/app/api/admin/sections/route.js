@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
-import { v2 as cloudinary } from "cloudinary";
 import Banner from "@/models/Sections";
+import { uploadSectionBannerBuffer } from "@/lib/sectionBannerUpload";
 
-// ✅ Cloudinary Config
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
+function pickCreatePayload(raw) {
+  return {
+    title: String(raw?.title ?? "").trim(),
+    subtitle: String(raw?.subtitle ?? "").trim(),
+    section: String(raw?.section ?? "").trim(),
+    buttonText1: String(raw?.buttonText1 ?? "").trim(),
+    buttonText2: String(raw?.buttonText2 ?? "").trim(),
+  };
+}
 
 // ✅ GET → All Banners
 export async function GET() {
@@ -42,29 +44,37 @@ export async function POST(req) {
       );
     }
 
-    const bannerData = JSON.parse(rawData);
+    let parsed;
+    try {
+      parsed = JSON.parse(rawData);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON in form data" },
+        { status: 400 }
+      );
+    }
+
+    const bannerData = pickCreatePayload(parsed);
+    if (!bannerData.title) {
+      return NextResponse.json(
+        { success: false, error: "Title is required" },
+        { status: 400 }
+      );
+    }
+    if (!bannerData.section) {
+      return NextResponse.json(
+        { success: false, error: "Section key is required (e.g. landingpage-frontsection)" },
+        { status: 400 }
+      );
+    }
 
     let imageData = null;
     const file = formData.get("image");
 
-    // ✅ Upload image only if exists
-    if (file && file.size > 0) {
+    if (file && typeof file === "object" && "size" in file && file.size > 0) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-
-      imageData = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: "banners" },
-          (err, result) => {
-            if (err) reject(err);
-            resolve({
-              url: result.secure_url,
-              public_id: result.public_id
-            });
-          }
-        );
-        uploadStream.end(buffer);
-      });
+      imageData = await uploadSectionBannerBuffer(buffer, "banners");
     }
 
     if (imageData) bannerData.bannerUrl = imageData;

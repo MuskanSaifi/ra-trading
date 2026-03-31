@@ -1,1 +1,84 @@
 @import "tailwindcss";
+
+/* Design tokens — change here to retheme the whole store */
+:root {
+  --store-primary: #ff9900;
+  --store-primary-dark: #e68a00;
+  --store-primary-soft: #fff4e6;
+  --store-ink: #1a1a1a;
+  --store-muted: #6b7280;
+  --store-border: #e5e7eb;
+  --store-surface: #f9fafb;
+  --store-radius: 0.75rem;
+}
+
+body {
+  color: var(--store-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.store-container {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .store-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* Public blog HTML from Tiptap (sanitized) */
+.blog-html :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--store-ink);
+  font-weight: 800;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.blog-html h1 {
+  font-size: 1.875rem;
+}
+.blog-html h2 {
+  font-size: 1.5rem;
+}
+.blog-html h3 {
+  font-size: 1.25rem;
+}
+.blog-html p {
+  margin-bottom: 1rem;
+}
+.blog-html ul,
+.blog-html ol {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.35rem;
+}
+.blog-html a {
+  color: var(--store-primary);
+  text-decoration: underline;
+}
+.blog-html img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 0.75rem 0;
+}
+.blog-html blockquote {
+  border-left: 4px solid var(--store-border);
+  padding-left: 1rem;
+  font-style: italic;
+  margin: 1rem 0;
+}
+.blog-html pre {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+.blog-html hr {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--store-border);
+}

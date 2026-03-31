@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
+import PageBanner from "@/components/store/PageBanner";
 
 export default function FAQPage() {
   const [faqs, setFaqs] = useState([]);
@@ -39,12 +40,14 @@ export default function FAQPage() {
   };
 
   return (
-    <section className="max-w-5xl mx-auto px-6 py-12">
-      <h1 className="text-4xl font-bold text-center mb-8">
-        Frequently Asked Questions
-      </h1>
-
-      {/* 🔍 Search Bar */}
+    <div>
+      <PageBanner
+        accent="default"
+        title="FAQ"
+        subtitle="Search common questions or browse the list."
+        crumbs={[{ label: "Home", href: "/" }, { label: "FAQ" }]}
+      />
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
       <div className="relative mb-10">
         <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
         <input
@@ -52,11 +55,10 @@ export default function FAQPage() {
           placeholder="Search your question..."
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
+          className="w-full pl-12 pr-4 py-3 rounded-xl border border-[var(--store-border)] focus:ring-2 focus:ring-[var(--store-primary)]/40 outline-none shadow-sm bg-white"
         />
       </div>
 
-      {/* FAQ List */}
       <div className="space-y-4">
         {filteredFaqs.length > 0 ? (
           filteredFaqs.map((faq, index) => (
@@ -92,5 +94,6 @@ export default function FAQPage() {
         )}
       </div>
     </section>
+    </div>
   );
 }

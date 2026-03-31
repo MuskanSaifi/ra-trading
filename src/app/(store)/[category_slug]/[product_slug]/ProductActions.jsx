@@ -130,7 +130,7 @@ const totalSaving = Number(((mrp - price) * qty).toFixed(2));
       {/* 💰 PRICE */}
       <div className="space-y-1">
         <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-indigo-700">
+          <span className="text-2xl font-bold text-[var(--store-primary)]">
             ₹{totalPrice}
           </span>
 
@@ -212,7 +212,7 @@ const totalSaving = Number(((mrp - price) * qty).toFixed(2));
               ? "bg-gray-300 text-gray-600 cursor-not-allowed"
               : added
               ? "bg-green-600 text-white"
-              : "bg-indigo-600 text-white hover:bg-indigo-700"
+              : "bg-[var(--store-primary)] text-[var(--store-ink)] font-bold hover:bg-[var(--store-primary-dark)]"
           }`}
       >
         {adding ? (

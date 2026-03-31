@@ -10,12 +10,8 @@ export default function Footer() {
   useEffect(() => {
     const fetchContact = async () => {
       try {
-        const res = await fetch("/api/store/contact-section", { 
-          cache: 'force-cache', // Cache to reduce server load
-          next: { revalidate: 600 }, // Revalidate every 10 minutes (contact info doesn't change often)
-          headers: {
-            'Content-Type': 'application/json',
-          }
+        const res = await fetch("/api/store/contact-section", {
+          cache: "no-store",
         });
 
         if (!res.ok) {
@@ -83,7 +79,7 @@ export default function Footer() {
   }
 
   return (
-    <footer className="bg-gradient-to-br from-gray-900 via-black to-gray-900 text-gray-300 pt-14">
+    <footer className="bg-[var(--store-ink)] text-gray-300 pt-14 border-t-4 border-[var(--store-primary)]">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
 
         {/* ✅ Branding */}
@@ -97,7 +93,7 @@ export default function Footer() {
           )}
 
           <h2 className="text-2xl font-bold text-white mb-3">
-            {contact.title}
+            {contact.title?.trim() || contact.companyName?.trim() || "Store"}
           </h2>
 
           <p className="text-sm leading-relaxed text-gray-400">
@@ -110,8 +106,9 @@ export default function Footer() {
           <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
           <ul className="space-y-2 text-sm">
             <li><a href="/" className="hover:text-white transition">Home</a></li>
-            <li><a href="/shop" className="hover:text-white transition">Shop</a></li>
-            <li><a href="/about" className="hover:text-white transition">About Us</a></li>
+            <li><a href="/shop" className="hover:text-[var(--store-primary)] transition">Shop</a></li>
+            <li><a href="/blog" className="hover:text-[var(--store-primary)] transition">Blog</a></li>
+            <li><a href="/about" className="hover:text-[var(--store-primary)] transition">About Us</a></li>
             <li><a href="/contact" className="hover:text-white transition">Contact</a></li>
           </ul>
         </div>
@@ -196,7 +193,9 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="mt-12 border-t border-gray-800 py-6 text-center text-sm text-gray-500">
-        © {new Date().getFullYear()} {contact.title}. All Rights Reserved.
+        © {new Date().getFullYear()}{" "}
+        {contact.title?.trim() || contact.companyName?.trim() || "Store"}. All
+        Rights Reserved.
       </div>
     </footer>
   );

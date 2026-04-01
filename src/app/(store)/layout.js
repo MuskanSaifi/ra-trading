@@ -3,6 +3,7 @@ import "../globals.css";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ViewCartFloatingButton from "@/components/CartButton";
+import ChatbotWidget from "@/components/ChatbotWidget";
 import { getContactSection } from "@/lib/staticData";
 
 // Metadata from API - no hardcoded company name
@@ -49,6 +50,7 @@ export default function RootLayout({ children }) {
         <main className="main-container min-h-[50vh] bg-[var(--store-surface)]">
           {children}
           <ViewCartFloatingButton />
+          <ChatbotWidget />
         </main>
         <footer>
           <Footer />

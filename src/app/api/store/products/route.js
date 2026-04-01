@@ -45,6 +45,7 @@ export async function GET(req) {
     const rawSearch = searchParams.get("search") || "";
     const search = sanitizeSearchQuery(rawSearch, 50);
     const category = sanitizeInput(searchParams.get("category") || "", 50);
+    const brand = sanitizeInput(searchParams.get("brand") || "", 50);
     const priceRange = searchParams.get("priceRange") || "";
     const sort = searchParams.get("sort") || "default";
     
@@ -78,6 +79,13 @@ export async function GET(req) {
       const categoryDoc = await Category.findOne({ slug: category }).lean();
       if (categoryDoc) {
         query.category = categoryDoc._id;
+      }
+    }
+
+    if (brand && brand !== "all") {
+      const brandDoc = await Brand.findOne({ slug: brand }).lean();
+      if (brandDoc) {
+        query.brand = brandDoc._id;
       }
     }
 
@@ -144,7 +152,7 @@ export async function GET(req) {
     }
 
     // Dynamic cache based on query type
-    const isSearch = search || category || priceRange || isTrending || isFeatured || isNewArrival;
+    const isSearch = search || category || brand || priceRange || isTrending || isFeatured || isNewArrival;
     const cacheControl = isSearch 
       ? 'public, s-maxage=30, stale-while-revalidate=60' // Shorter cache for filtered results
       : 'public, s-maxage=60, stale-while-revalidate=120'; // Longer cache for general listings

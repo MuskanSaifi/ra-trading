@@ -16,6 +16,7 @@ function ShopContent() {
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +27,7 @@ function ShopContent() {
   const [category, setCategory] = useState(
     searchParams.get("category") || "all"
   );
+  const [brand, setBrand] = useState(searchParams.get("brand") || "all");
   const [priceRange, setPriceRange] = useState(
     searchParams.get("priceRange") || "all"
   );
@@ -48,6 +50,18 @@ function ShopContent() {
     }
   }, []);
 
+  const fetchBrands = useCallback(async () => {
+    try {
+      const res = await fetch("/api/store/brands");
+      const data = await res.json();
+      if (data?.success && Array.isArray(data.brands)) {
+        setBrands(data.brands);
+      }
+    } catch (err) {
+      console.error("Brand fetch error:", err);
+    }
+  }, []);
+
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
@@ -58,6 +72,7 @@ function ShopContent() {
 
       if (search) params.set("search", search);
       if (category !== "all") params.set("category", category);
+      if (brand !== "all") params.set("brand", brand);
       if (priceRange !== "all") params.set("priceRange", priceRange);
       if (sort !== "default") params.set("sort", sort);
 
@@ -81,11 +96,12 @@ function ShopContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, category, priceRange, sort]);
+  }, [page, search, category, brand, priceRange, sort]);
 
   useEffect(() => {
     fetchCategories();
-  }, [fetchCategories]);
+    fetchBrands();
+  }, [fetchCategories, fetchBrands]);
 
   useEffect(() => {
     fetchProducts();
@@ -96,16 +112,18 @@ function ShopContent() {
 
     if (search) params.set("search", search);
     if (category !== "all") params.set("category", category);
+    if (brand !== "all") params.set("brand", brand);
     if (priceRange !== "all") params.set("priceRange", priceRange);
     if (sort !== "default") params.set("sort", sort);
     if (page > 1) params.set("page", page.toString());
 
     router.replace(`/shop?${params.toString()}`, { scroll: false });
-  }, [search, category, priceRange, sort, page, router]);
+  }, [search, category, brand, priceRange, sort, page, router]);
 
   const resetFilters = () => {
     setSearch("");
     setCategory("all");
+    setBrand("all");
     setPriceRange("all");
     setSort("default");
     setPage(1);
@@ -186,6 +204,27 @@ function ShopContent() {
               </select>
             </div>
 
+            <div className="rounded-2xl border border-[var(--store-border)] bg-white p-5 shadow-sm">
+              <h2 className="font-bold text-[var(--store-ink)] mb-4 text-sm uppercase tracking-wide">
+                Brand
+              </h2>
+              <select
+                value={brand}
+                onChange={(e) => {
+                  setBrand(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full border border-[var(--store-border)] rounded-xl px-3 py-2.5 text-sm bg-[var(--store-surface)]"
+              >
+                <option value="all">All brands</option>
+                {brands.map((b) => (
+                  <option key={b._id} value={b.slug}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="rounded-2xl border border-[var(--store-border)] bg-[var(--store-ink)] text-white p-5 shadow-sm">
               <p className="text-xs font-bold uppercase text-[var(--store-primary)] mb-2">Tags</p>
               <p className="text-xs text-gray-400 mb-3">Quick ideas — combine with search.</p>
@@ -247,6 +286,21 @@ function ShopContent() {
                   <option value="under5k">Under ₹5,000</option>
                   <option value="5kTo20k">₹5,000 – ₹20,000</option>
                   <option value="above20k">Above ₹20,000</option>
+                </select>
+                <select
+                  value={brand}
+                  onChange={(e) => {
+                    setBrand(e.target.value);
+                    setPage(1);
+                  }}
+                  className="border border-[var(--store-border)] rounded-xl px-4 py-3 text-sm bg-white lg:hidden"
+                >
+                  <option value="all">All brands</option>
+                  {brands.map((b) => (
+                    <option key={b._id} value={b.slug}>
+                      {b.name}
+                    </option>
+                  ))}
                 </select>
                 <select
                   value={sort}

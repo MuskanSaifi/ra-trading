@@ -36,7 +36,6 @@ useEffect(() => {
   };
 }, []);
 
-
   if (cartCount === 0) return null;
   if (hiddenPages.includes(pathname)) return null;
   if (isCategoryPage) return null;

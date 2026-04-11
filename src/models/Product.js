@@ -38,6 +38,8 @@ const ProductSchema = new mongoose.Schema(
     // Inventory
     stock: { type: Number, default: 0 },
     minOrder: { type: Number, default: 1 },
+    /** When false, checkout hides COD for orders containing this product */
+    codAvailable: { type: Boolean, default: true },
 
     // Attributes
     attributes: [

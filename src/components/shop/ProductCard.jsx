@@ -85,14 +85,22 @@ export default function ProductCard({ product }) {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
     const exists = cart.find((i) => i._id === product._id);
 
-    if (exists) exists.quantity += 1;
-    else {
+    const minOrder = product.minOrder || 1;
+    if (exists) {
+      exists.quantity += 1;
+      exists.productId = exists.productId || exists._id;
+      exists.minOrder = product.minOrder || 1;
+      exists.codAvailable = product.codAvailable !== false;
+    } else {
       cart.push({
         _id: product._id,
+        productId: product._id,
         name: product.name,
         price,
         image,
-        quantity: 1,
+        quantity: minOrder,
+        minOrder,
+        codAvailable: product.codAvailable !== false,
       });
     }
 

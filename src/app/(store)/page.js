@@ -1,7 +1,6 @@
 import ContactSection from "@/components/ContactSection";
 import Sections from "@/components/Sections";
 import Category from "./all-categories/page";
-import HomeFeatureBar from "@/components/store/HomeFeatureBar";
 import HomePromoBanners from "@/components/store/HomePromoBanners";
 import HomeProductTabs from "@/components/store/HomeProductTabs";
 import HomeLatestBlogs from "@/components/store/HomeLatestBlogs";
@@ -37,7 +36,6 @@ export default function Home() {
       <Sections section="landingpage-frontsection"/>
       <Category/>
       <HomeBrands />
-      <HomeFeatureBar />
       <HomePromoBanners />
       <HomeProductTabs />
       <HomeLatestBlogs />

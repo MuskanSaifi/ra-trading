@@ -92,14 +92,22 @@ const totalSaving = Number(((mrp - price) * qty).toFixed(2));
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
     const exists = cart.find((i) => i._id === product._id);
 
-    if (exists) exists.quantity += qty;
+    if (exists) {
+      exists.quantity += qty;
+      exists.productId = exists.productId || exists._id;
+      exists.minOrder = product.minOrder || 1;
+      exists.codAvailable = product.codAvailable !== false;
+    }
     else {
       cart.push({
         _id: product._id,
+        productId: product._id,
         name: product.name,
         price,
         image,
         quantity: qty,
+        minOrder: product.minOrder || 1,
+        codAvailable: product.codAvailable !== false,
       });
     }
 

@@ -43,8 +43,8 @@ export async function generateMetadata() {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
-        <header className="sticky top-0 z-50 w-full">
+      <body className="overflow-x-hidden max-w-full">
+        <header className="sticky top-0 z-50 w-full max-w-full min-w-0 overflow-x-clip">
           <Navbar />
         </header>
         <main className="main-container min-h-[50vh] bg-[var(--store-surface)]">
@@ -52,7 +52,7 @@ export default function RootLayout({ children }) {
           <ViewCartFloatingButton />
           <ChatbotWidget />
         </main>
-        <footer>
+        <footer className="w-full max-w-full min-w-0 overflow-x-clip">
           <Footer />
         </footer>
       </body>

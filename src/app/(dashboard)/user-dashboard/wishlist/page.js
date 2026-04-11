@@ -60,8 +60,30 @@ export default function WishlistPage() {
     let cart = JSON.parse(localStorage.getItem("cart") || "[]");
     const exists = cart.find((i) => i._id === product._id);
 
-    if (exists) exists.quantity += 1;
-    else cart.push({ ...product, quantity: 1 });
+    const price = product.salePrice ?? product.price;
+    const image =
+      typeof product.images?.[0] === "string"
+        ? product.images[0]
+        : product.images?.[0]?.url;
+    const minOrder = product.minOrder || 1;
+    if (exists) {
+      exists.quantity += 1;
+      exists.productId = exists.productId || exists._id;
+      exists.price = price;
+      exists.minOrder = minOrder;
+      exists.codAvailable = product.codAvailable !== false;
+    } else {
+      cart.push({
+        _id: product._id,
+        productId: product._id,
+        name: product.name,
+        price,
+        image,
+        quantity: minOrder,
+        minOrder,
+        codAvailable: product.codAvailable !== false,
+      });
+    }
 
     localStorage.setItem("cart", JSON.stringify(cart));
     handleRemove(product._id);

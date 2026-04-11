@@ -290,7 +290,7 @@ export default function ChatbotWidget() {
   return (
     <div className="fixed bottom-5 right-4 md:right-6 z-[70]">
       {open && (
-        <div className="mb-3 w-[92vw] max-w-sm rounded-2xl border border-[var(--store-border)] bg-white shadow-2xl overflow-hidden transition-all duration-300">
+        <div className="mb-3 w-[min(24rem,calc(100vw-1.5rem))] max-w-sm rounded-2xl border border-[var(--store-border)] bg-white shadow-2xl overflow-hidden transition-all duration-300">
           <div className="flex items-center justify-between bg-[var(--store-ink)] px-4 py-3 text-white">
             <div>
               <p className="text-sm font-bold">RA Trading Assistant</p>

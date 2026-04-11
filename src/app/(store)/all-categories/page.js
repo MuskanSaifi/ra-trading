@@ -33,7 +33,7 @@ export default function CategoriesPage() {
   }
 
   return (
-    <section className="bg-[var(--store-surface)] py-8 md:py-16 px-3 sm:px-6">
+    <section className="bg-[var(--store-surface)] py-8 md:py-16 px-3 sm:px-6 w-full max-w-full min-w-0 overflow-x-hidden">
       <div className="store-container mb-6 md:mb-10 text-center">
         <h1 className="text-2xl md:text-4xl font-black text-[var(--store-ink)]">
           Shop by category
@@ -76,7 +76,7 @@ export default function CategoriesPage() {
         </div>
 
         {/* Tablet+: horizontal scroll, larger cards */}
-        <div className="hidden md:flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-hide">
+        <div className="hidden md:flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-hide min-w-0 max-w-full">
           {categories.map((cat) => (
             <Link
               key={cat?._id || cat.slug}

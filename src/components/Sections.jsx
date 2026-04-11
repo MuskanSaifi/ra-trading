@@ -28,9 +28,9 @@ const Sections = ({ section }) => {
   const imgUrl = data?.bannerUrl?.url;
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-[var(--store-surface)] via-white to-[var(--store-primary-soft)]">
-      <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(circle_at_70%_30%,var(--store-primary),transparent_45%)]" />
-      <div className="store-container relative py-14 md:py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    <section className="relative w-full max-w-full min-w-0 overflow-hidden bg-gradient-to-br from-[var(--store-surface)] via-white to-[var(--store-primary-soft)]">
+      <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(circle_at_70%_30%,var(--store-primary),transparent_45%)] pointer-events-none" />
+      <div className="store-container relative py-14 md:py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-w-0">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--store-primary)] mb-3">
             Welcome
@@ -57,10 +57,14 @@ const Sections = ({ section }) => {
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative min-w-0 overflow-hidden">
           {imgUrl ? (
-            <div className="rounded-3xl overflow-hidden shadow-2xl border border-[var(--store-border)] rotate-1 hover:rotate-0 transition-transform duration-500">
-              <img src={imgUrl} alt="" className="w-full max-h-[520px] object-cover" />
+            <div className="rounded-3xl overflow-hidden shadow-2xl border border-[var(--store-border)] rotate-1 hover:rotate-0 transition-transform duration-500 will-change-transform">
+              <img
+                src={imgUrl}
+                alt=""
+                className="w-full max-w-full max-h-[520px] object-cover"
+              />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">

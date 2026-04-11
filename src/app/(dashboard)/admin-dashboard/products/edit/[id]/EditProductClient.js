@@ -33,6 +33,7 @@ export default function EditProductClient({ id }) {
     sku: "",
     stock: "",
     minOrder: 1,
+    codAvailable: true,
     attributes: [],
     isTrending: false,
     isFeatured: false,
@@ -80,6 +81,11 @@ export default function EditProductClient({ id }) {
             ...prev,
             ...product,
             slug: product.slug || "",
+            codAvailable: product.codAvailable !== false,
+            minOrder:
+              product.minOrder != null && product.minOrder !== ""
+                ? product.minOrder
+                : 1,
             images:
               product.images?.map((img) =>
                 typeof img === "string" ? { url: img } : img
@@ -333,7 +339,7 @@ export default function EditProductClient({ id }) {
 
         {/* Inventory */}
         <section>
-          <h3 className="text-xl font-semibold mb-3">Inventory</h3>
+          <h3 className="text-xl font-semibold mb-3">Inventory & checkout rules</h3>
           <div className="grid grid-cols-2 gap-3">
             <input
               type="text"
@@ -355,6 +361,32 @@ export default function EditProductClient({ id }) {
               }
               className="w-full border rounded px-3 py-2"
             />
+            <input
+              type="number"
+              min={1}
+              placeholder="Minimum order quantity"
+              value={form.minOrder}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  minOrder: e.target.value ? parseInt(e.target.value, 10) : 1,
+                })
+              }
+              className="w-full border rounded px-3 py-2 col-span-2 sm:col-span-1"
+            />
+            <label className="flex items-center gap-3 col-span-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.codAvailable}
+                onChange={(e) =>
+                  setForm({ ...form, codAvailable: e.target.checked })
+                }
+                className="h-4 w-4 rounded border-gray-300 text-[var(--store-primary)] focus:ring-[var(--store-primary)]"
+              />
+              <span className="text-sm font-medium">
+                Cash on delivery available for this product
+              </span>
+            </label>
           </div>
         </section>
 

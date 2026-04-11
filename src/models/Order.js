@@ -25,6 +25,8 @@ const orderSchema = new mongoose.Schema(
     totalAmount: Number,
     paymentMode: { type: String, default: "COD" },
     paymentStatus: { type: String, default: "Pending" },
+    razorpayOrderId: { type: String },
+    razorpayPaymentId: { type: String },
 
     status: { type: String, default: "Pending" },
     cancelReason: String,

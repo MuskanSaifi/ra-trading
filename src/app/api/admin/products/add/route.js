@@ -102,6 +102,7 @@ export const POST = requireAdminAuth(async (req) => {
 
       stock: Number(data.stock) || 0,
       minOrder: Number(data.minOrder) || 1,
+      codAvailable: data.codAvailable !== false,
 
       attributes: data.attributes || [],
       tags: formattedTags,

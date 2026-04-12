@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
+    "start:3005": "next start -p 3005",
     "lint": "eslint",
     "seed:admin": "node scripts/seed-admin.mjs"
   },

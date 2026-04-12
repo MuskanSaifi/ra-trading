@@ -7,15 +7,15 @@ import {
   otpVerifyRateLimit,
 } from '@/lib/rateLimit';
 
-// Allowed origins for CORS (security improvement)
+// Allowed origins for CORS — comma-separated in ALLOWED_ORIGIN, e.g. https://ratradingco.com,https://www.ratradingco.com
 const getAllowedOrigin = (origin) => {
-  // In production, replace with your actual domains
+  const fromEnv =
+    process.env.ALLOWED_ORIGIN?.split(",").map((s) => s.trim()).filter(Boolean) || [];
   const allowedOrigins = [
-    process.env.ALLOWED_ORIGIN,
-    'http://localhost:3000',
-    'http://localhost:3001',
-    // Add your mobile app origins here
-  ].filter(Boolean);
+    ...fromEnv,
+    "http://localhost:3000",
+    "http://localhost:3001",
+  ];
 
   // If no origin specified, restrict in production
   if (!origin) {

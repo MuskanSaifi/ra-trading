@@ -18,6 +18,15 @@ export default function BannerAdminPage() {
     buttonText1: "",
     buttonText2: "",
     image: null,
+    addons: {
+      offerEnabled: false,
+      offerBadgeText: "",
+      offerTitle: "",
+      offerDiscountText: "",
+      countdownEnabled: false,
+      countdownEndsAt: "",
+      countdownLabel: "",
+    },
   });
 
   const fetchBanners = async () => {
@@ -38,6 +47,12 @@ export default function BannerAdminPage() {
       section: form.section,
       buttonText1: form.buttonText1,
       buttonText2: form.buttonText2,
+      addons: {
+        ...form.addons,
+        countdownEndsAt: form.addons.countdownEndsAt
+          ? new Date(form.addons.countdownEndsAt).toISOString()
+          : null,
+      },
     };
 
     const fd = new FormData();
@@ -72,6 +87,15 @@ export default function BannerAdminPage() {
       buttonText1: "",
       buttonText2: "",
       image: null,
+      addons: {
+        offerEnabled: false,
+        offerBadgeText: "",
+        offerTitle: "",
+        offerDiscountText: "",
+        countdownEnabled: false,
+        countdownEndsAt: "",
+        countdownLabel: "",
+      },
     });
   };
 
@@ -178,6 +202,98 @@ export default function BannerAdminPage() {
                 }
               />
 
+              <div className="pt-2 border-t">
+                <p className="text-sm font-semibold mb-2">Hero addons (optional)</p>
+
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={!!form.addons.offerEnabled}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        addons: { ...form.addons, offerEnabled: e.target.checked },
+                      })
+                    }
+                  />
+                  Enable offer card
+                </label>
+
+                <input
+                  className="border p-2 w-full rounded-lg mt-2"
+                  placeholder="Offer badge (e.g. LIMITED OFFER)"
+                  value={form.addons.offerBadgeText}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      addons: { ...form.addons, offerBadgeText: e.target.value },
+                    })
+                  }
+                />
+
+                <input
+                  className="border p-2 w-full rounded-lg mt-2"
+                  placeholder="Offer title (e.g. Get 20% Off New Products)"
+                  value={form.addons.offerTitle}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      addons: { ...form.addons, offerTitle: e.target.value },
+                    })
+                  }
+                />
+
+                <input
+                  className="border p-2 w-full rounded-lg mt-2"
+                  placeholder="Discount text (e.g. Use code: RA20)"
+                  value={form.addons.offerDiscountText}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      addons: { ...form.addons, offerDiscountText: e.target.value },
+                    })
+                  }
+                />
+
+                <label className="flex items-center gap-2 text-sm mt-3">
+                  <input
+                    type="checkbox"
+                    checked={!!form.addons.countdownEnabled}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        addons: { ...form.addons, countdownEnabled: e.target.checked },
+                      })
+                    }
+                  />
+                  Enable countdown
+                </label>
+
+                <input
+                  type="datetime-local"
+                  className="border p-2 w-full rounded-lg mt-2"
+                  value={form.addons.countdownEndsAt}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      addons: { ...form.addons, countdownEndsAt: e.target.value },
+                    })
+                  }
+                />
+
+                <input
+                  className="border p-2 w-full rounded-lg mt-2"
+                  placeholder="Countdown label (e.g. Offer ends in)"
+                  value={form.addons.countdownLabel}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      addons: { ...form.addons, countdownLabel: e.target.value },
+                    })
+                  }
+                />
+              </div>
+
               <div className="flex gap-3 justify-end">
                 <button
                   className="px-4 py-2 bg-gray-300 rounded-lg"
@@ -246,6 +362,19 @@ export default function BannerAdminPage() {
                           buttonText1: b.buttonText1,
                           buttonText2: b.buttonText2,
                           image: null,
+                          addons: {
+                            offerEnabled: !!b.addons?.offerEnabled,
+                            offerBadgeText: b.addons?.offerBadgeText || "",
+                            offerTitle: b.addons?.offerTitle || "",
+                            offerDiscountText: b.addons?.offerDiscountText || "",
+                            countdownEnabled: !!b.addons?.countdownEnabled,
+                            countdownEndsAt: b.addons?.countdownEndsAt
+                              ? new Date(b.addons.countdownEndsAt)
+                                  .toISOString()
+                                  .slice(0, 16)
+                              : "",
+                            countdownLabel: b.addons?.countdownLabel || "",
+                          },
                         });
                         setOpen(true);
                       }}

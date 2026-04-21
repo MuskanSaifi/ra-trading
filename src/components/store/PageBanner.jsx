@@ -12,12 +12,12 @@ export default function PageBanner({
   accent = "default",
 }) {
   const accents = {
-    default: "from-[var(--store-primary)] to-amber-400",
-    shop: "from-orange-500 to-[var(--store-primary)]",
+    default: "from-[var(--store-primary)] to-[var(--store-accent)]",
+    shop: "from-[var(--store-primary)] to-[var(--store-accent)]",
     cart: "from-neutral-800 to-neutral-600",
-    blog: "from-[var(--store-primary)] to-orange-600",
-    about: "from-amber-600 to-[var(--store-primary)]",
-    contact: "from-neutral-700 to-orange-500",
+    blog: "from-[var(--store-primary)] to-[var(--store-accent)]",
+    about: "from-[var(--store-accent)] to-[var(--store-primary)]",
+    contact: "from-[var(--store-ink)] to-[var(--store-primary)]",
   };
   const grad = accents[accent] || accents.default;
 

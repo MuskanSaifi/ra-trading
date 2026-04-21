@@ -2,13 +2,16 @@
 
 /* Design tokens — change here to retheme the whole store */
 :root {
-  --store-primary: #ff9900;
-  --store-primary-dark: #e68a00;
-  --store-primary-soft: #fff4e6;
-  --store-ink: #1a1a1a;
-  --store-muted: #6b7280;
-  --store-border: #e5e7eb;
-  --store-surface: #f9fafb;
+  /* Maroon / blush theme (matches current UI direction) */
+  --store-primary: #6b2326;
+  --store-primary-rgb: 107, 35, 38;
+  --store-primary-dark: #4b1719;
+  --store-primary-soft: #f7e9ea;
+  --store-accent: #d9a3a5;
+  --store-ink: #2a0f12;
+  --store-muted: #7a6b6d;
+  --store-border: #eadfe0;
+  --store-surface: #fbf6f6;
   --store-radius: 0.75rem;
 }
 
@@ -75,7 +78,7 @@ body {
 .store-glass-footer-wrap::after {
   bottom: -22%;
   right: -10%;
-  background: #3b82f6;
+  background: var(--store-accent);
 }
 
 .store-glass-footer-inner {
@@ -122,7 +125,7 @@ body {
   inset: 0;
   background: radial-gradient(
     ellipse 90% 60% at 10% 0%,
-    rgba(255, 153, 0, 0.12),
+    rgba(var(--store-primary-rgb), 0.14),
     transparent 55%
   );
   pointer-events: none;

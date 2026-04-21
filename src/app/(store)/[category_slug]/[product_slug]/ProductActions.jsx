@@ -164,7 +164,7 @@ const totalSaving = Number(((mrp - price) * qty).toFixed(2));
       {outOfStock ? (
         <p className="text-red-600 font-semibold">Out of Stock</p>
       ) : lowStock ? (
-        <p className="text-orange-600 font-semibold">
+        <p className="text-[var(--store-primary)] font-semibold">
           Only {stock} left – hurry!
         </p>
       ) : (
@@ -220,7 +220,7 @@ const totalSaving = Number(((mrp - price) * qty).toFixed(2));
               ? "bg-gray-300 text-gray-600 cursor-not-allowed"
               : added
               ? "bg-green-600 text-white"
-              : "bg-[var(--store-primary)] text-[var(--store-ink)] font-bold hover:bg-[var(--store-primary-dark)]"
+              : "bg-[var(--store-primary)] text-white font-bold hover:bg-[var(--store-primary-dark)]"
           }`}
       >
         {adding ? (
@@ -242,7 +242,7 @@ const totalSaving = Number(((mrp - price) * qty).toFixed(2));
       {!outOfStock && (
         <button
           onClick={buyNow}
-          className="w-full py-3 rounded-lg flex items-center justify-center gap-2 bg-orange-500 text-white hover:bg-orange-600"
+          className="w-full py-3 rounded-lg flex items-center justify-center gap-2 bg-[var(--store-primary)] text-white hover:bg-[var(--store-primary-dark)]"
         >
           <Zap size={20} /> Buy Now
         </button>

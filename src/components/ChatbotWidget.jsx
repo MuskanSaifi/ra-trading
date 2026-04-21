@@ -313,7 +313,7 @@ export default function ChatbotWidget() {
                 className={`max-w-[88%] rounded-2xl px-3 py-2 text-sm whitespace-pre-line ${
                   m.from === "bot"
                     ? "bg-white border border-[var(--store-border)] text-slate-700"
-                    : "ml-auto bg-[var(--store-primary)] text-[var(--store-ink)] font-medium"
+                    : "ml-auto bg-[var(--store-primary)] text-white font-medium"
                 }`}
               >
                 {m.text}
@@ -354,7 +354,7 @@ export default function ChatbotWidget() {
                 {inputError && <p className="text-xs text-red-600">{inputError}</p>}
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-[var(--store-primary)] px-3 py-2 text-sm font-semibold text-[var(--store-ink)] hover:brightness-95"
+                  className="w-full rounded-xl bg-[var(--store-primary)] px-3 py-2 text-sm font-semibold text-white hover:brightness-95"
                 >
                   Submit
                 </button>
@@ -378,7 +378,7 @@ export default function ChatbotWidget() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="ml-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--store-primary)] text-[var(--store-ink)] shadow-xl hover:brightness-95 transition"
+        className="ml-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--store-primary)] text-white shadow-xl hover:brightness-95 transition"
         aria-label="Open chatbot"
       >
         <MessageCircle size={22} />

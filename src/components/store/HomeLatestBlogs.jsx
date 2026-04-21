@@ -103,7 +103,7 @@ export default function HomeLatestBlogs() {
       <div className="mt-10 sm:hidden">
         <Link
           href="/blog"
-          className="inline-flex w-full items-center justify-center rounded-xl bg-[#ff9900] px-5 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:brightness-95 transition"
+          className="inline-flex w-full items-center justify-center rounded-xl bg-[var(--store-primary)] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[var(--store-primary-dark)] transition"
         >
           View more blogs
         </Link>

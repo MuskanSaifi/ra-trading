@@ -76,7 +76,7 @@ export default function CartPage() {
             <button
               type="button"
               onClick={() => router.push("/shop")}
-              className="bg-[var(--store-primary)] text-[var(--store-ink)] font-bold px-8 py-3 rounded-full hover:bg-[var(--store-primary-dark)]"
+              className="bg-[var(--store-primary)] text-white font-bold px-8 py-3 rounded-full hover:bg-[var(--store-primary-dark)]"
             >
               Continue shopping
             </button>
@@ -142,7 +142,7 @@ export default function CartPage() {
               <button
                 type="button"
                 onClick={handleCheckout}
-                className="bg-[var(--store-primary)] text-[var(--store-ink)] px-8 py-3 rounded-full font-black hover:bg-[var(--store-primary-dark)]"
+                className="bg-[var(--store-primary)] text-white px-8 py-3 rounded-full font-black hover:bg-[var(--store-primary-dark)]"
               >
                 Checkout →
               </button>

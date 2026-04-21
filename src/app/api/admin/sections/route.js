@@ -10,6 +10,17 @@ function pickCreatePayload(raw) {
     section: String(raw?.section ?? "").trim(),
     buttonText1: String(raw?.buttonText1 ?? "").trim(),
     buttonText2: String(raw?.buttonText2 ?? "").trim(),
+    addons: {
+      offerEnabled: Boolean(raw?.addons?.offerEnabled),
+      offerBadgeText: String(raw?.addons?.offerBadgeText ?? "").trim(),
+      offerTitle: String(raw?.addons?.offerTitle ?? "").trim(),
+      offerDiscountText: String(raw?.addons?.offerDiscountText ?? "").trim(),
+      countdownEnabled: Boolean(raw?.addons?.countdownEnabled),
+      countdownEndsAt: raw?.addons?.countdownEndsAt
+        ? new Date(raw.addons.countdownEndsAt)
+        : null,
+      countdownLabel: String(raw?.addons?.countdownLabel ?? "").trim(),
+    },
   };
 }
 

@@ -20,7 +20,8 @@ export async function OPTIONS() {
 export async function GET() {
   try {
     await connectDB();
-    const banners = await Banner.find().sort({ createdAt: -1 }).lean();
+    // Sort by last edited so storefront uses latest configured content
+    const banners = await Banner.find().sort({ updatedAt: -1, createdAt: -1 }).lean();
 
     return jsonResponse(
       { success: true, banners },

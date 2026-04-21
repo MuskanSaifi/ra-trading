@@ -44,7 +44,7 @@ useEffect(() => {
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
       <button
         onClick={() => router.push("/cart")}
-        className="rounded-full bg-[var(--store-primary)] px-6 py-3 text-lg font-semibold text-[var(--store-ink)] shadow-xl transition hover:brightness-95 transform hover:scale-105"
+        className="rounded-full bg-[var(--store-primary)] px-6 py-3 text-lg font-semibold text-white shadow-xl transition hover:brightness-95 transform hover:scale-105"
       >
         View Cart ({cartCount})
       </button>

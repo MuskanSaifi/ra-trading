@@ -230,7 +230,7 @@ export default function CheckoutClient() {
             contact: addr.phone,
             email: user.email || "",
           },
-          theme: { color: "#ff9900" },
+          theme: { color: "var(--store-primary)" },
           modal: {
             ondismiss: () => setLoading(false),
           },
@@ -274,9 +274,9 @@ export default function CheckoutClient() {
     );
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-4 flex justify-center">
+    <div className="min-h-screen bg-[var(--store-surface)] py-10 px-4 flex justify-center">
       <div className="max-w-6xl w-full bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center">
+        <h1 className="text-4xl font-bold text-[var(--store-ink)] mb-8 text-center">
           Checkout 🛍️
         </h1>
 
@@ -294,7 +294,7 @@ export default function CheckoutClient() {
                   type="button"
                   onClick={() => setSameAsProfile(!sameAsProfile)}
                   className={`w-12 h-7 rounded-full p-1 cursor-pointer transition-all flex items-center border-0
-                    ${sameAsProfile ? "bg-indigo-600" : "bg-gray-300"}`}
+                    ${sameAsProfile ? "bg-[var(--store-primary)]" : "bg-gray-300"}`}
                   aria-pressed={sameAsProfile}
                 >
                   <span
@@ -306,7 +306,7 @@ export default function CheckoutClient() {
             </div>
 
             {sameAsProfile ? (
-              <div className="space-y-1 bg-purple-50 p-4 rounded-lg border">
+              <div className="space-y-1 bg-[var(--store-primary-soft)] p-4 rounded-lg border border-[var(--store-border)]">
                 <p>{user.name}</p>
                 <p>📞 {user.phone}</p>
                 <p>{user.address}</p>

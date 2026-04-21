@@ -324,7 +324,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className="hidden md:block bg-[var(--store-primary)] text-[var(--store-ink)] w-full min-w-0 overflow-x-hidden">
+      <div className="hidden md:block bg-[var(--store-primary)] text-white w-full min-w-0 overflow-x-hidden">
         <div className="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 sm:gap-4 text-sm font-bold min-w-0">
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 min-w-0">
             <Link

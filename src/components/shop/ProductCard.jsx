@@ -140,7 +140,7 @@ export default function ProductCard({ product }) {
           </span>
         )}
         {product?.isTrending && (
-          <span className="bg-orange-500 text-white text-[10px] md:text-xs px-1.5 py-0.5 rounded flex items-center gap-0.5 leading-none">
+          <span className="bg-[var(--store-primary)] text-white text-[10px] md:text-xs px-1.5 py-0.5 rounded flex items-center gap-0.5 leading-none">
             <Flame size={10} className="md:w-3 md:h-3" />
             <span className="hidden sm:inline">Trending</span>
           </span>
@@ -171,7 +171,7 @@ export default function ProductCard({ product }) {
               ? "bg-gray-300 text-gray-500 cursor-not-allowed"
               : added
                 ? "bg-green-600 text-white"
-                : "bg-[var(--store-primary)] text-[var(--store-ink)]"
+                : "bg-[var(--store-primary)] text-white"
           }`}
           aria-label={stock === 0 ? "Out of stock" : added ? "Added to cart" : "Add to cart"}
         >
@@ -219,7 +219,7 @@ export default function ProductCard({ product }) {
         {stock === 0 ? (
           <p className="text-red-500 text-xs md:text-sm font-semibold">Out of Stock</p>
         ) : lowStock ? (
-          <p className="text-orange-500 text-[10px] md:text-sm font-semibold">Only {stock} left</p>
+          <p className="text-[var(--store-primary)] text-[10px] md:text-sm font-semibold">Only {stock} left</p>
         ) : (
           <p className="text-green-600 text-[10px] md:text-sm hidden sm:block">In Stock</p>
         )}
@@ -240,7 +240,7 @@ export default function ProductCard({ product }) {
                 ? "bg-gray-300 text-gray-600 cursor-not-allowed"
                 : added
                   ? "bg-green-600 text-white"
-                  : "bg-[var(--store-primary)] text-[var(--store-ink)] font-bold hover:bg-[var(--store-primary-dark)]"
+                  : "bg-[var(--store-primary)] text-white font-bold hover:bg-[var(--store-primary-dark)]"
             }`}
         >
           {adding ? (

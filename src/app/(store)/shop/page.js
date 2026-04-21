@@ -242,7 +242,7 @@ function ShopContent() {
           </aside>
 
           <div>
-            <div className="rounded-2xl border border-[var(--store-border)] bg-gradient-to-r from-[var(--store-primary)] to-amber-400 text-[var(--store-ink)] p-6 mb-6 shadow-md lg:hidden">
+            <div className="rounded-2xl border border-[var(--store-border)] bg-gradient-to-r from-[var(--store-primary)] to-[var(--store-accent)] text-white p-6 mb-6 shadow-md lg:hidden">
               <p className="text-sm font-black uppercase tracking-wider">Sale spotlight</p>
               <p className="text-lg font-bold mt-1">Stack filters below — same tools as desktop.</p>
             </div>
@@ -367,7 +367,7 @@ function ShopContent() {
                   type="button"
                   disabled={page === totalPages || loading}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="px-5 py-2.5 rounded-full bg-[var(--store-primary)] text-[var(--store-ink)] font-bold disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-full bg-[var(--store-primary)] text-white font-bold disabled:opacity-50"
                 >
                   Next
                 </button>

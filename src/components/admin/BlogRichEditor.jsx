@@ -47,7 +47,7 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
       disabled={disabled}
       className={`rounded-lg p-2 text-sm transition ${
         active
-          ? "bg-[#ff9900] text-[#1a1a1a] shadow-inner"
+          ? "bg-[var(--store-primary)] text-white shadow-inner"
           : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
       } disabled:opacity-40 disabled:cursor-not-allowed`}
     >
@@ -196,7 +196,7 @@ export default function BlogRichEditor({ initialContent = "<p></p>", onChange })
             openOnClick: false,
             autolink: true,
             HTMLAttributes: {
-              class: "text-[#b45309] underline font-medium",
+              class: "text-[var(--store-primary)] underline font-medium",
               rel: "noopener noreferrer",
               target: "_blank",
             },

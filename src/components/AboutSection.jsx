@@ -56,14 +56,33 @@ useEffect(() => {
           </p>
 
           {/* ✅ Stats */}
-          <div className="grid grid-cols-2 gap-6 mt-8">
-            {about?.stats?.map((s, i) => (
-              <div key={i} className="flex items-center">
-                <h3 className="text-md font-bold text-gray-900">{s.value}</h3>
-                <p className="text-gray-600 ml-2">{s.label}</p>
-              </div>
-            ))}
-          </div>
+       {/* ✅ Premium Stats */}
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-10">
+  {about?.stats?.map((s, i) => (
+    <motion.div
+      key={i}
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ delay: i * 0.1 }}
+      viewport={{ once: true }}
+      className="bg-white/70 backdrop-blur-lg border border-gray-200 rounded-2xl p-5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+    >
+      <div className="flex items-center gap-3">
+        {/* Icon Circle */}
+        <div className="w-10 h-10 flex items-center justify-center rounded-full bg-[#5a1f1f] text-white text-lg shadow">
+          ✓
+        </div>
+
+        <div>
+          <h3 className="text-xl font-bold text-gray-900 leading-tight">
+            {s.value}
+          </h3>
+          <p className="text-gray-600 text-sm">{s.label}</p>
+        </div>
+      </div>
+    </motion.div>
+  ))}
+</div>
         </motion.div>
 
         {/* RIGHT - use img with onError to handle 404/deleted Cloudinary images */}

@@ -5,6 +5,7 @@ import HomePromoBanners from "@/components/store/HomePromoBanners";
 import HomeProductTabs from "@/components/store/HomeProductTabs";
 import HomeLatestBlogs from "@/components/store/HomeLatestBlogs";
 import HomeBrands from "@/components/store/HomeBrands";
+import HomeGraphics from "@/components/store/HomeGraphics";
 import AboutSection from "@/components/AboutSection";
 import Reviews from "@/components/Reviews";
 import FAQ from "@/components/FAQ";
@@ -34,6 +35,7 @@ export default function Home() {
   return (
     <div>
       <Sections section="landingpage-frontsection"/>
+      <HomeGraphics />
       <Category/>
       <HomeBrands />
       <HomePromoBanners />

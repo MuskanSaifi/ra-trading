@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import Review from "@/models/Review";
 import { v2 as cloudinary } from "cloudinary";
+import { requireAdminAuth } from "@/lib/authHelpers";
 
 // Cloudinary Config
 cloudinary.config({
@@ -13,7 +14,7 @@ cloudinary.config({
 // ======================================
 // 📌 GET Single Review
 // ======================================
-export async function GET(req, { params }) {
+export const GET = requireAdminAuth(async (req, { params }) => {
   try {
     await connectDB();
     const { id } = await params;
@@ -30,12 +31,12 @@ export async function GET(req, { params }) {
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
+});
 
 // ======================================
 // 📌 PUT → Update Review
 // ======================================
-export async function PUT(req, { params }) {
+export const PUT = requireAdminAuth(async (req, { params }) => {
   try {
     await connectDB();
 
@@ -90,12 +91,12 @@ export async function PUT(req, { params }) {
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
+});
 
 // ======================================
 // 📌 DELETE Review
 // ======================================
-export async function DELETE(req, { params }) {
+export const DELETE = requireAdminAuth(async (req, { params }) => {
   try {
     await connectDB();
     const { id } = await params;
@@ -115,4 +116,4 @@ export async function DELETE(req, { params }) {
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-}
+});

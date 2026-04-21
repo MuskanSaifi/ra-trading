@@ -13,12 +13,34 @@ export default function AdminDashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
-    if (!token) {
-      router.replace("/admin-login");
-      return;
+    let alive = true;
+    async function check() {
+      const token = localStorage.getItem("adminToken");
+      if (!token) {
+        router.replace("/admin-login");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/admin/auth/verify", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          localStorage.removeItem("adminToken");
+          if (alive) router.replace("/admin-login");
+          return;
+        }
+        if (alive) setAuthorized(true);
+      } catch {
+        // If network fails, keep current behavior: don't hard-lock the UI
+        if (alive) setAuthorized(true);
+      }
     }
-    setAuthorized(true);
+
+    check();
+    return () => {
+      alive = false;
+    };
   }, [router]);
 
   useEffect(() => {

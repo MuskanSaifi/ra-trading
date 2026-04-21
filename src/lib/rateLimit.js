@@ -67,6 +67,14 @@ export function rateLimit(options = {}) {
   };
 }
 
+function baseIp(req) {
+  const forwarded = req.headers.get("x-forwarded-for");
+  const ip = forwarded
+    ? forwarded.split(",")[0].trim()
+    : req.headers.get("x-real-ip") || "unknown";
+  return ip;
+}
+
 /**
  * Strict rate limiter for sensitive endpoints (password login, contact form, etc.)
  * Note: OTP flows use otpSendRateLimit / otpVerifyRateLimit so users are not locked out after a few tries.
@@ -74,6 +82,7 @@ export function rateLimit(options = {}) {
 export const strictRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   maxRequests: 5,
+  keyGenerator: (req) => `strict:${baseIp(req)}`,
 });
 
 /** SMS OTP send — separate bucket from verify so retries are usable */
@@ -81,11 +90,7 @@ export const otpSendRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   maxRequests: 15,
   keyGenerator: (req) => {
-    const forwarded = req.headers.get("x-forwarded-for");
-    const ip = forwarded
-      ? forwarded.split(",")[0].trim()
-      : req.headers.get("x-real-ip") || "unknown";
-    return `otp-send:${ip}`;
+    return `otp-send:${baseIp(req)}`;
   },
 });
 
@@ -94,11 +99,7 @@ export const otpVerifyRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   maxRequests: 40,
   keyGenerator: (req) => {
-    const forwarded = req.headers.get("x-forwarded-for");
-    const ip = forwarded
-      ? forwarded.split(",")[0].trim()
-      : req.headers.get("x-real-ip") || "unknown";
-    return `otp-verify:${ip}`;
+    return `otp-verify:${baseIp(req)}`;
   },
 });
 
@@ -107,7 +108,8 @@ export const otpVerifyRateLimit = rateLimit({
  */
 export const moderateRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  maxRequests: 30 // 30 requests per minute
+  maxRequests: 120, // admin/store UI can be chatty in dev
+  keyGenerator: (req) => `moderate:${baseIp(req)}`,
 });
 
 /**
@@ -115,5 +117,6 @@ export const moderateRateLimit = rateLimit({
  */
 export const looseRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  maxRequests: 100 // 100 requests per minute
+  maxRequests: 200,
+  keyGenerator: (req) => `loose:${baseIp(req)}`,
 });

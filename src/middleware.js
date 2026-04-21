@@ -44,6 +44,14 @@ export async function middleware(request) {
   const origin = request.headers.get('origin');
   const allowedOrigin = getAllowedOrigin(origin);
 
+  // In development, don't rate-limit admin API calls (fast refresh + admin UI causes bursts)
+  if (
+    process.env.NODE_ENV !== "production" &&
+    request.nextUrl.pathname.startsWith("/api/admin/")
+  ) {
+    return NextResponse.next();
+  }
+
   // Handle CORS for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
     // Security headers

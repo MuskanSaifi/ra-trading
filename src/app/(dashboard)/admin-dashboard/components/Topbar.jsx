@@ -17,6 +17,7 @@ const titleMap = [
   { prefix: "/admin-dashboard/send-notification", label: "Send notification" },
   { prefix: "/admin-dashboard/delete-requests", label: "Delete requests" },
   { prefix: "/admin-dashboard/sections", label: "Sections" },
+  { prefix: "/admin-dashboard/graphics", label: "Home graphics" },
   { prefix: "/admin-dashboard/blog", label: "Blog" },
   { prefix: "/admin-dashboard/about-us", label: "About us" },
   { prefix: "/admin-dashboard/contact-form", label: "Contact form" },

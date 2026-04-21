@@ -20,7 +20,15 @@ export default function ReviewsPage() {
   // FETCH ALL REVIEWS
   // -----------------------------
   const fetchReviews = async () => {
-    const res = await fetch("/api/admin/reviews");
+    const token = localStorage.getItem("adminToken");
+    const res = await fetch("/api/admin/reviews", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (res.status === 401) {
+      localStorage.removeItem("adminToken");
+      window.location.href = "/admin-login";
+      return;
+    }
     const data = await res.json();
     if (data.success) setReviews(data.reviews);
   };
@@ -61,11 +69,18 @@ export default function ReviewsPage() {
 
     const method = editingReview ? "PUT" : "POST";
 
+    const token = localStorage.getItem("adminToken");
     const res = await fetch(url, {
       method,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
 
+    if (res.status === 401) {
+      localStorage.removeItem("adminToken");
+      window.location.href = "/admin-login";
+      return;
+    }
     const data = await res.json();
 
     if (data.success) {
@@ -110,9 +125,16 @@ export default function ReviewsPage() {
   const handleDelete = async (id) => {
     if (!confirm("Delete this review?")) return;
 
+    const token = localStorage.getItem("adminToken");
     const res = await fetch(`/api/admin/reviews/${id}`, {
       method: "DELETE",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
+    if (res.status === 401) {
+      localStorage.removeItem("adminToken");
+      window.location.href = "/admin-login";
+      return;
+    }
 
     const data = await res.json();
     if (data.success) fetchReviews();

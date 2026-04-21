@@ -47,8 +47,9 @@ export async function POST(req) {
       );
     }
 
+    // Keep admin session for ~30 days
     const token = jwt.sign({ adminId: admin._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "30d",
     });
 
     const res = NextResponse.json({
@@ -61,7 +62,7 @@ export async function POST(req) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // Secure in production
       sameSite: "strict", // Stricter same-site policy
-      maxAge: 7 * 24 * 60 * 60,
+      maxAge: 30 * 24 * 60 * 60,
       path: "/",
     });
 

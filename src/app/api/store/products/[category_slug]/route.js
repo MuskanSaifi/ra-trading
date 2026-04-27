@@ -48,11 +48,11 @@ export async function GET(req, { params }) {
     const skip = (page - 1) * limit;
 
     // Get total count
-    const total = await Product.countDocuments({ category: category._id });
+    const total = await Product.countDocuments({ category: category._id, status: "active" });
 
     // Fetch products with pagination, lean, and field selection
-    const products = await Product.find({ category: category._id })
-      .select("name slug price salePrice discount images stock isTrending isFeatured isNewArrival category brand createdAt")
+    const products = await Product.find({ category: category._id, status: "active" })
+      .select("name slug price salePrice discount images stock isTrending isFeatured isNewArrival category brand createdAt imageBgColor minOrder codAvailable")
       .populate("category", "name slug")
       .populate("brand", "name slug")
       .sort({ createdAt: -1 })

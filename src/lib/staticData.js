@@ -108,7 +108,7 @@ export async function getProductsByCategory(categorySlug) {
       category: category._id,
       status: "active"
     })
-      .select("name slug price salePrice discount images stock isTrending isFeatured isNewArrival category brand createdAt")
+      .select("name slug price salePrice discount images stock isTrending isFeatured isNewArrival category brand createdAt imageBgColor minOrder codAvailable")
       .populate("category", "name slug")
       .populate("brand", "name slug")
       .sort({ createdAt: -1 })
@@ -167,7 +167,7 @@ export async function getFeaturedProducts(limit = 8) {
         { isNewArrival: true }
       ]
     })
-      .select("name slug price salePrice discount images stock isTrending isFeatured isNewArrival category brand createdAt")
+      .select("name slug price salePrice discount images stock isTrending isFeatured isNewArrival category brand createdAt imageBgColor minOrder codAvailable")
       .populate("category", "name slug")
       .populate("brand", "name slug")
       .sort({ createdAt: -1 })

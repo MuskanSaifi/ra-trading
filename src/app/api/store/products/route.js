@@ -57,7 +57,7 @@ export async function GET(req) {
     const isNewArrival = searchParams.get("isNewArrival");
 
     // Build query
-    const query = {};
+    const query = { status: "active" };
     
     // Only use regex if search is meaningful (length > 2) to prevent CPU spikes
     if (search && search.length > 2) {
@@ -130,7 +130,7 @@ export async function GET(req) {
 
     // Fetch products with pagination, lean, and field selection
     const products = await Product.find(query)
-      .select("name slug price salePrice discount images stock isTrending isFeatured isNewArrival category brand createdAt")
+      .select("name slug price salePrice discount images stock isTrending isFeatured isNewArrival category brand createdAt imageBgColor minOrder codAvailable")
       .populate("category", "name slug")
       .populate("brand", "name slug")
       .sort(sortQuery)

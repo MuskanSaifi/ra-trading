@@ -41,6 +41,10 @@ const ProductSchema = new mongoose.Schema(
     /** When false, checkout hides COD for orders containing this product */
     codAvailable: { type: Boolean, default: true },
 
+    // Display
+    /** Background color behind product images on website */
+    imageBgColor: { type: String, default: "#ffffff" },
+
     // Attributes
     attributes: [
       {
@@ -85,6 +89,8 @@ ProductSchema.index({ isFeatured: 1, createdAt: -1 }); // For featured products
 ProductSchema.index({ isNewArrival: 1, createdAt: -1 }); // For new arrivals
 ProductSchema.index({ name: 'text', description: 'text', tags: 'text' }); // Text search index (more efficient than regex)
 ProductSchema.index({ stock: 1 }); // For stock queries
+ProductSchema.index({ status: 1, createdAt: -1 }); // For store listings
+ProductSchema.index({ category: 1, status: 1, createdAt: -1 }); // For category listings
 
 const Product =
   mongoose.models.Product || mongoose.model("Product", ProductSchema);

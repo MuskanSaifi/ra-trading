@@ -1,23 +1,19 @@
 import mongoose from "mongoose";
 
+const globalKey = "__ratradingMongoose";
+
+/**
+ * Cache the connection/promise on the Node global to avoid:
+ * - opening multiple connections in dev (fast refresh)
+ * - attaching repeated event listeners during parallel SSG workers
+ */
+const cached = globalThis[globalKey] || { conn: null, promise: null };
+globalThis[globalKey] = cached;
+
 const connectDB = async () => {
-  // Check if already connected
-  if (mongoose.connections[0]?.readyState === 1) {
-    return; // already connected
-  }
-  
   try {
-    // If connection is in progress, wait for it
-    if (mongoose.connections[0]?.readyState === 2) {
-      await new Promise((resolve) => {
-        mongoose.connection.once("connected", resolve);
-        mongoose.connection.once("error", resolve);
-      });
-      if (mongoose.connections[0]?.readyState === 1) {
-        return;
-      }
-    }
-    
+    if (cached.conn) return;
+
     const connectOptions = {
       maxPoolSize: 10, // Maintain up to 10 socket connections
       minPoolSize: 2, // Maintain minimum 2 connections for better performance
@@ -33,10 +29,17 @@ const connectDB = async () => {
       connectOptions.dbName = dbName;
     }
 
-    await mongoose.connect(process.env.MONGODB_URI, connectOptions);
-    
-    console.log("✅ MongoDB Connected");
+    if (!cached.promise) {
+      cached.promise = mongoose.connect(process.env.MONGODB_URI, connectOptions);
+    }
+
+    cached.conn = await cached.promise;
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("✅ MongoDB Connected");
+    }
   } catch (error) {
+    cached.promise = null;
     console.error("❌ MongoDB Connection Error:", error.message);
     throw error;
   }

@@ -28,6 +28,7 @@ export default function ProductActions({ product }) {
   const discount = product.discount || 0;
   const stock = product.stock || 0;
   const image = product.images?.[0]?.url;
+  const imageBgColor = product.imageBgColor || "#ffffff";
 
   const outOfStock = stock === 0;
   const lowStock = stock > 0 && stock <= 5;
@@ -97,6 +98,7 @@ const totalSaving = Number(((mrp - price) * qty).toFixed(2));
       exists.productId = exists.productId || exists._id;
       exists.minOrder = product.minOrder || 1;
       exists.codAvailable = product.codAvailable !== false;
+      exists.imageBgColor = imageBgColor;
     }
     else {
       cart.push({
@@ -108,6 +110,7 @@ const totalSaving = Number(((mrp - price) * qty).toFixed(2));
         quantity: qty,
         minOrder: product.minOrder || 1,
         codAvailable: product.codAvailable !== false,
+        imageBgColor,
       });
     }
 

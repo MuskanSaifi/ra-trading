@@ -34,6 +34,7 @@ export default function EditProductClient({ id }) {
     stock: "",
     minOrder: 1,
     codAvailable: true,
+    imageBgColor: "#ffffff",
     attributes: [],
     isTrending: false,
     isFeatured: false,
@@ -82,6 +83,7 @@ export default function EditProductClient({ id }) {
             ...product,
             slug: product.slug || "",
             codAvailable: product.codAvailable !== false,
+            imageBgColor: product.imageBgColor || "#ffffff",
             minOrder:
               product.minOrder != null && product.minOrder !== ""
                 ? product.minOrder
@@ -387,6 +389,46 @@ export default function EditProductClient({ id }) {
                 Cash on delivery available for this product
               </span>
             </label>
+          </div>
+        </section>
+
+        {/* Display */}
+        <section>
+          <h3 className="text-xl font-semibold mb-3">Display</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Image background color
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={form.imageBgColor || "#ffffff"}
+                  onChange={(e) =>
+                    setForm({ ...form, imageBgColor: e.target.value })
+                  }
+                  className="h-10 w-14 p-0 border rounded"
+                  aria-label="Image background color"
+                />
+                <input
+                  type="text"
+                  value={form.imageBgColor || "#ffffff"}
+                  onChange={(e) =>
+                    setForm({ ...form, imageBgColor: e.target.value })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="#ffffff"
+                />
+              </div>
+            </div>
+            <div className="rounded-lg border overflow-hidden">
+              <div
+                className="h-16 w-full flex items-center justify-center"
+                style={{ backgroundColor: form.imageBgColor || "#ffffff" }}
+              >
+                <span className="text-xs text-gray-600">Preview</span>
+              </div>
+            </div>
           </div>
         </section>
 

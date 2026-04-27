@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import countriesData from "@/lib/countries.json" assert { type: "json" };
+import Image from "next/image";
 
 function loadRazorpayScript() {
   return new Promise((resolve) => {
@@ -36,6 +37,7 @@ export default function CheckoutClient() {
   const [paymentMode, setPaymentMode] = useState("COD");
   const [loading, setLoading] = useState(false);
   const [sameAsProfile, setSameAsProfile] = useState(true);
+  const [deliveryCheck, setDeliveryCheck] = useState(null);
 
   const [address, setAddress] = useState({
     name: "",
@@ -120,12 +122,51 @@ export default function CheckoutClient() {
     return address;
   }, [user, sameAsProfile, address]);
 
+  const deliveryKey = useMemo(() => {
+    const a = effectiveAddress || {};
+    return `${a.country || ""}|${a.state || ""}|${a.city || ""}|${a.pincode || ""}`;
+  }, [effectiveAddress]);
+
   const subtotal = cartItems.reduce((t, i) => t + i.price * i.quantity, 0);
   const shipping = subtotal > 0 ? 99 : 0;
   const total = subtotal + shipping;
 
   const validatePhone = (v) => /^\d{10}$/.test(v);
   const validatePincode = (v) => /^\d{6}$/.test(v);
+
+  const checkDelivery = async (addr) => {
+    const pin = String(addr?.pincode || "").replace(/\D/g, "");
+    if (!addr?.city || !addr?.country || !pin || pin.length !== 6) {
+      setDeliveryCheck(null);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/store/delivery/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: addr }),
+      });
+      const data = await res.json();
+      setDeliveryCheck({
+        ok: !!data.ok,
+        message: data.message,
+        suggestions: data.suggestions || [],
+      });
+    } catch {
+      // Silent: don't block checkout if check endpoint fails; server will validate again.
+      setDeliveryCheck(null);
+    }
+  };
+
+  // Auto-check delivery for both profile & custom address
+  useEffect(() => {
+    if (!initialized) return;
+    const t = setTimeout(() => {
+      checkDelivery(effectiveAddress);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [initialized, deliveryKey, sameAsProfile]);
 
   const orderLineItems = () =>
     cartItems.map((i) => ({
@@ -161,6 +202,18 @@ export default function CheckoutClient() {
     if (!validatePincode(addr.pincode)) return alert("Invalid pincode.");
     if (!addr.name || !addr.street || !addr.city || !addr.state)
       return alert("Fill all required shipping info.");
+
+    if (deliveryCheck && deliveryCheck.ok === false) {
+      return alert(
+        (deliveryCheck.message || "We do not deliver to this location yet.") +
+          (deliveryCheck.suggestions?.length
+            ? ` Suggested pincodes: ${deliveryCheck.suggestions
+                .slice(0, 5)
+                .map((s) => s.pincode)
+                .join(", ")}`
+            : "")
+      );
+    }
 
     if (paymentMode === "COD" && !codAllowed) {
       return alert("COD is not available for items in your cart. Pay online with Razorpay.");
@@ -314,6 +367,30 @@ export default function CheckoutClient() {
                   {user.city}, {user.state} - {user.pincode}
                 </p>
                 <p>{user.country}</p>
+
+                {deliveryCheck && (
+                  <div
+                    className={`mt-3 rounded-lg border p-3 text-sm ${
+                      deliveryCheck.ok
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-amber-200 bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    <p className="font-semibold">
+                      {deliveryCheck.ok ? "Delivery available" : "Not serviceable"}
+                    </p>
+                    <p className="mt-1">{deliveryCheck.message}</p>
+                    {!deliveryCheck.ok && deliveryCheck.suggestions?.length > 0 && (
+                      <p className="mt-2 text-xs">
+                        Suggestions:{" "}
+                        {deliveryCheck.suggestions
+                          .slice(0, 6)
+                          .map((s) => `${s.city} - ${s.pincode}`)
+                          .join(", ")}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
@@ -417,10 +494,35 @@ export default function CheckoutClient() {
                       pincode: e.target.value.replace(/\D/g, ""),
                     })
                   }
+                  onBlur={() => checkDelivery({ ...address })}
                   className={`w-full border p-3 rounded-lg ${
                     validatePincode(address.pincode) ? "" : "border-red-500"
                   }`}
                 />
+
+                {deliveryCheck && (
+                  <div
+                    className={`rounded-lg border p-3 text-sm ${
+                      deliveryCheck.ok
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-amber-200 bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    <p className="font-semibold">
+                      {deliveryCheck.ok ? "Delivery available" : "Not serviceable"}
+                    </p>
+                    <p className="mt-1">{deliveryCheck.message}</p>
+                    {!deliveryCheck.ok && deliveryCheck.suggestions?.length > 0 && (
+                      <p className="mt-2 text-xs">
+                        Suggestions:{" "}
+                        {deliveryCheck.suggestions
+                          .slice(0, 6)
+                          .map((s) => `${s.city} - ${s.pincode}`)
+                          .join(", ")}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -432,11 +534,20 @@ export default function CheckoutClient() {
               {cartItems.map((i) => (
                 <div key={i._id} className="flex justify-between border-b pb-2">
                   <div className="flex gap-3 items-center">
-                    <img
-                      src={i.image}
-                      alt=""
-                      className="w-16 h-16 rounded object-cover"
-                    />
+                    <div
+                      className="w-16 h-16 rounded overflow-hidden"
+                      style={{ backgroundColor: i.imageBgColor || "#ffffff" }}
+                    >
+                      <Image
+                        src={i.image || "/placeholder.png"}
+                        alt={i.name || "Cart item"}
+                        width={96}
+                        height={96}
+                        className="w-full h-full object-cover"
+                        sizes="64px"
+                        loading="lazy"
+                      />
+                    </div>
                     <div>
                       <p className="font-medium">{i.name}</p>
                       <p className="text-gray-600 text-sm">Qty: {i.quantity}</p>

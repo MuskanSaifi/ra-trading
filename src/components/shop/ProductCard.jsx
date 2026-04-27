@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Heart,
   ShoppingCart,
@@ -21,6 +22,7 @@ export default function ProductCard({ product }) {
   const productSlug = product?.slug || "product";
 
   const image = product?.images?.[0]?.url || "/placeholder.png";
+  const imageBgColor = product?.imageBgColor || "#ffffff";
   const price = product?.salePrice || product?.price;
   const mrp = product?.price;
   const discount = product?.discount || 0;
@@ -87,10 +89,12 @@ export default function ProductCard({ product }) {
 
     const minOrder = product.minOrder || 1;
     if (exists) {
-      exists.quantity += 1;
+      // If legacy cart has qty < minOrder, bump it first
+      exists.quantity = Math.max(minOrder, (exists.quantity || 0) + 1);
       exists.productId = exists.productId || exists._id;
       exists.minOrder = product.minOrder || 1;
       exists.codAvailable = product.codAvailable !== false;
+      exists.imageBgColor = product.imageBgColor || "#ffffff";
     } else {
       cart.push({
         _id: product._id,
@@ -101,6 +105,7 @@ export default function ProductCard({ product }) {
         quantity: minOrder,
         minOrder,
         codAvailable: product.codAvailable !== false,
+        imageBgColor: product.imageBgColor || "#ffffff",
       });
     }
 
@@ -155,11 +160,20 @@ export default function ProductCard({ product }) {
 
       <div className="relative">
         <Link href={`/${categorySlug}/${productSlug}`}>
-          <img
-            src={image}
-            alt={product?.name}
-            className="w-full h-36 sm:h-44 md:h-56 object-cover group-hover:scale-105 transition"
-          />
+          <div
+            className="w-full h-36 sm:h-44 md:h-56 overflow-hidden"
+            style={{ backgroundColor: imageBgColor }}
+          >
+            <Image
+              src={image}
+              alt={product?.name || "Product image"}
+              width={800}
+              height={800}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px"
+              className="w-full h-full object-cover group-hover:scale-105 transition"
+              loading="lazy"
+            />
+          </div>
         </Link>
 
         <button

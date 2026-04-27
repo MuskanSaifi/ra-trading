@@ -80,6 +80,11 @@ export const PUT = requireAdminAuth(async (req, { params }) => {
       productData.tags = productData.tags.split(",").map((t) => t.trim());
     }
 
+    // ✅ Display defaults
+    if (productData.imageBgColor == null || productData.imageBgColor === "") {
+      productData.imageBgColor = "#ffffff";
+    }
+
     const { id } = await params;
     
     // ✅ Fetch existing

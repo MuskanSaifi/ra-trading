@@ -103,6 +103,7 @@ export const POST = requireAdminAuth(async (req) => {
       stock: Number(data.stock) || 0,
       minOrder: Number(data.minOrder) || 1,
       codAvailable: data.codAvailable !== false,
+      imageBgColor: typeof data.imageBgColor === "string" ? data.imageBgColor : "#ffffff",
 
       attributes: data.attributes || [],
       tags: formattedTags,

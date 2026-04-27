@@ -5,6 +5,7 @@ import { FaTrash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import PageBanner from "@/components/store/PageBanner";
+import Image from "next/image";
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState([]);
@@ -13,7 +14,18 @@ export default function CartPage() {
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("cart") || "[]");
-    setCartItems(stored);
+    // Normalize legacy carts: enforce MOQ and sane quantities
+    const normalized = Array.isArray(stored)
+      ? stored.map((i) => {
+          const minOrder = Number(i.minOrder || 1);
+          const qty = Number(i.quantity || 0);
+          return {
+            ...i,
+            quantity: Math.max(minOrder, qty || minOrder),
+          };
+        })
+      : [];
+    setCartItems(normalized);
     setInitialized(true);
   }, []);
 
@@ -26,13 +38,21 @@ export default function CartPage() {
   }, [cartItems, initialized]);
 
   const handleQuantityChange = (id, type) => {
+    const current = cartItems.find((x) => x._id === id);
+    const minOrder = Number(current?.minOrder || 1);
+    if (type === "dec" && current && Number(current.quantity) <= minOrder) {
+      alert(`Minimum order quantity (MOQ) for this product is ${minOrder}.`);
+      return;
+    }
     setCartItems((prev) =>
       prev.map((item) =>
         item._id === id
           ? {
               ...item,
               quantity:
-                type === "inc" ? item.quantity + 1 : Math.max(1, item.quantity - 1),
+                type === "inc"
+                  ? item.quantity + 1
+                  : Math.max(Number(item.minOrder || 1), item.quantity - 1),
             }
           : item
       )
@@ -90,16 +110,30 @@ export default function CartPage() {
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[var(--store-border)] shadow-sm"
                 >
                   <div className="flex items-center gap-4">
-                    <img
-                      src={item.image}
-                      alt=""
-                      className="w-24 h-24 rounded-xl object-cover border border-[var(--store-border)]"
-                    />
+                    <div
+                      className="w-24 h-24 rounded-xl overflow-hidden border border-[var(--store-border)]"
+                      style={{ backgroundColor: item.imageBgColor || "#ffffff" }}
+                    >
+                      <Image
+                        src={item.image || "/placeholder.png"}
+                        alt={item.name || "Cart item"}
+                        width={160}
+                        height={160}
+                        className="w-full h-full object-cover"
+                        sizes="96px"
+                        loading="lazy"
+                      />
+                    </div>
                     <div>
                       <h2 className="font-bold text-[var(--store-ink)] line-clamp-2">{item.name}</h2>
                       <p className="text-[var(--store-primary)] font-black text-lg mt-1">
                         ₹{Number(item.price).toLocaleString()}
                       </p>
+                      {(Number(item.minOrder || 1) > 1) && (
+                        <p className="text-xs text-amber-800 mt-1">
+                          MOQ: {Number(item.minOrder || 1)}
+                        </p>
+                      )}
                     </div>
                   </div>
 

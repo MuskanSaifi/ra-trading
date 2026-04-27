@@ -6,6 +6,7 @@ import { notifyAdmin } from "@/lib/notificationHelper";
 import { notifyUser } from "@/lib/notificationHelper";
 import { getRazorpayInstance, verifyRazorpaySignature } from "@/lib/razorpay";
 import { validateCartItems, assertCodAllowedForCart } from "@/lib/orderPricing";
+import { checkDeliveryCoverage } from "@/lib/deliveryCoverage";
 
 export async function POST(req) {
   try {
@@ -129,6 +130,25 @@ export async function POST(req) {
       state: address.state,
       pincode: address.pincode,
     };
+
+    // ✅ Delivery coverage validation
+    const coverage = await checkDeliveryCoverage({
+      country: address.country || "India",
+      state: address.state,
+      city: address.city,
+      pincode: address.pincode,
+    });
+    if (!coverage.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: coverage.message,
+          suggestions: coverage.suggestions || [],
+          code: "NOT_SERVICEABLE",
+        },
+        { status: 400 }
+      );
+    }
 
     const orderItems = items.map((item) => ({
       productId: item.productId,

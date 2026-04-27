@@ -8,6 +8,9 @@ import "../../globals.css";
 import { connectDB } from "@/lib/dbConnect";
 import User from "@/models/User";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function UserDashboardLayout({ children }) {
   try {
     await connectDB();
@@ -33,18 +36,19 @@ export default async function UserDashboardLayout({ children }) {
 
     // ✅ If all good → render dashboard
     return (
-      <html lang="en">
-        <body>
-          <header className="sticky top-0 z-50 w-full">
-            <Navbar />
-          </header>
-          <UserDashboardShell>{children}</UserDashboardShell>
-          <Footer />
-        </body>
-      </html>
+      <>
+        <header className="sticky top-0 z-50 w-full">
+          <Navbar />
+        </header>
+        <UserDashboardShell>{children}</UserDashboardShell>
+        <Footer />
+      </>
     );
   } catch (err) {
-    console.error("❌ Token verification failed:", err.message);
+    // Avoid noisy logs for expected auth redirects (and during build)
+    if (process.env.NODE_ENV !== "production") {
+      console.error("❌ Token verification failed:", err.message);
+    }
     redirect("/login");
   }
 }

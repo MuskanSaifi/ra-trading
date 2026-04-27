@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import ProductActions from "./ProductActions";
 import SuggestedProducts from "@/components/shop/SuggestedProducts";
 import PageBanner from "@/components/store/PageBanner";
@@ -99,12 +100,20 @@ export default async function ProductPage({ params }) {
 
       <div className="store-container py-10 md:py-14">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
-          <div className="rounded-2xl overflow-hidden border border-[var(--store-border)] bg-white shadow-lg">
-            <img
-              src={product.images?.[0]?.url}
-              alt={product.name}
-              className="w-full object-cover max-h-[520px]"
-            />
+          <div
+            className="rounded-2xl overflow-hidden border border-[var(--store-border)] shadow-lg"
+            style={{ backgroundColor: product.imageBgColor || "#ffffff" }}
+          >
+            <div className="relative w-full h-[320px] sm:h-[420px] lg:h-[520px]">
+              <Image
+                src={product.images?.[0]?.url || "/placeholder.png"}
+                alt={product.name}
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+                priority
+              />
+            </div>
           </div>
 
           <div className="space-y-5 lg:pt-4">

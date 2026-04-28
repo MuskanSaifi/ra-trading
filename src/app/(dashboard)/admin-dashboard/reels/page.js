@@ -95,19 +95,33 @@ export default function AdminReelsPage() {
   const uploadVideo = async (file) => {
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/admin/upload/reels", {
-        method: "POST",
-        body: fd,
+      const sigRes = await fetch("/api/admin/reels/signature", {
+        method: "GET",
         credentials: "include",
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) throw new Error(data?.error || `Upload failed (${res.status})`);
+      const sig = await sigRes.json().catch(() => ({}));
+      if (!sigRes.ok || !sig.success) {
+        throw new Error(sig?.error || `Cannot get upload signature (${sigRes.status})`);
+      }
+
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${sig.cloudName}/video/upload`;
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("api_key", sig.apiKey);
+      fd.append("timestamp", String(sig.timestamp));
+      fd.append("signature", sig.signature);
+      fd.append("folder", sig.folder || "reels");
+
+      const upRes = await fetch(cloudinaryUrl, { method: "POST", body: fd });
+      const up = await upRes.json().catch(() => ({}));
+      if (!upRes.ok) {
+        throw new Error(up?.error?.message || `Cloudinary upload failed (${upRes.status})`);
+      }
+
       setForm((p) => ({
         ...p,
-        videoUrl: data.url,
-        videoPublicId: data.publicId,
+        videoUrl: up.secure_url,
+        videoPublicId: up.public_id,
       }));
     } catch (err) {
       alert(err.message);

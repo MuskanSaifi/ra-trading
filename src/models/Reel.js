@@ -7,9 +7,11 @@ const ReelSchema = new mongoose.Schema(
     title: { type: String, default: "" },
     video: {
       url: { type: String, required: true },
+      public_id: { type: String, default: "" },
     },
     poster: {
       url: { type: String, default: "" },
+      public_id: { type: String, default: "" },
     },
   },
   { timestamps: true }

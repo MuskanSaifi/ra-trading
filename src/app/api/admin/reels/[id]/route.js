@@ -1,6 +1,23 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import Reel from "@/models/Reel";
+import { v2 as cloudinary } from "cloudinary";
+
+function ensureCloudinary() {
+  if (
+    !process.env.CLOUDINARY_CLOUD_NAME ||
+    !process.env.CLOUDINARY_API_KEY ||
+    !process.env.CLOUDINARY_API_SECRET
+  ) {
+    return false;
+  }
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+  return true;
+}
 
 function toStr(v) {
   return String(v ?? "").trim();
@@ -43,6 +60,11 @@ export async function DELETE(req, context) {
     const existing = await Reel.findById(id);
     if (!existing) {
       return NextResponse.json({ success: false, error: "Reel not found" }, { status: 404 });
+    }
+
+    const videoPid = String(existing.video?.public_id || "").trim();
+    if (videoPid && ensureCloudinary()) {
+      await cloudinary.uploader.destroy(videoPid, { resource_type: "video" });
     }
     await Reel.findByIdAndDelete(id);
     return NextResponse.json({ success: true });

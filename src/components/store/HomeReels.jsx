@@ -51,6 +51,9 @@ export default function HomeReels() {
                   src={r.video?.url}
                   poster={r.poster?.url || undefined}
                   className="w-full aspect-[9/16] object-cover"
+                  autoPlay
+                  muted
+                  loop
                   controls
                   playsInline
                   preload="metadata"

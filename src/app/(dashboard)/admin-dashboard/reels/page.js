@@ -9,7 +9,9 @@ function emptyForm() {
     order: 0,
     title: "",
     videoUrl: "",
+    videoPublicId: "",
     posterUrl: "",
+    posterPublicId: "",
   };
 }
 
@@ -17,6 +19,7 @@ export default function AdminReelsPage() {
   const [reels, setReels] = useState([]);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState(emptyForm());
 
   const fetchReels = async () => {
@@ -44,7 +47,9 @@ export default function AdminReelsPage() {
         order: Number(form.order) || 0,
         title: form.title || "",
         videoUrl: form.videoUrl || "",
+        videoPublicId: form.videoPublicId || "",
         posterUrl: form.posterUrl || "",
+        posterPublicId: form.posterPublicId || "",
       };
 
       const endpoint = form._id ? `/api/admin/reels/${form._id}` : "/api/admin/reels";
@@ -74,7 +79,9 @@ export default function AdminReelsPage() {
       order: r.order || 0,
       title: r.title || "",
       videoUrl: r.video?.url || "",
+      videoPublicId: r.video?.public_id || "",
       posterUrl: r.poster?.url || "",
+      posterPublicId: r.poster?.public_id || "",
     });
     setOpen(true);
   };
@@ -85,13 +92,38 @@ export default function AdminReelsPage() {
     fetchReels();
   };
 
+  const uploadVideo = async (file) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload/reels", {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data?.error || `Upload failed (${res.status})`);
+      setForm((p) => ({
+        ...p,
+        videoUrl: data.url,
+        videoPublicId: data.publicId,
+      }));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Home Reels</h1>
           <p className="text-sm text-slate-600 mt-1">
-            Paste Cloudinary video URLs (mp4/webm). If there are no reels, the section won’t show on the home page.
+            Upload videos (mp4/webm/mov). Videos are saved to Cloudinary under the <b>reels</b> folder.
+            If there are no reels, the section won’t show on the home page.
           </p>
         </div>
         <button
@@ -146,14 +178,26 @@ export default function AdminReelsPage() {
               </label>
 
               <label className="text-sm font-medium text-slate-700 sm:col-span-2">
-                Video URL <span className="text-red-500">*</span>
+                Video upload <span className="text-red-500">*</span>
                 <input
-                  className="border border-slate-200 rounded-lg px-3 py-2 text-sm w-full mt-1 outline-none focus:ring-2 focus:ring-[#ff9900]/40 focus:border-[#ff9900]"
-                  value={form.videoUrl}
-                  onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
-                  placeholder="https://res.cloudinary.com/.../video/upload/.../file.mp4"
-                  required
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  className="block w-full mt-1 text-sm"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!f) return;
+                    await uploadVideo(f);
+                  }}
+                  disabled={uploading}
                 />
+                {form.videoUrl ? (
+                  <p className="text-xs text-slate-500 mt-1 break-all">
+                    Uploaded: {form.videoUrl}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-500 mt-1">Choose a video file to upload to Cloudinary.</p>
+                )}
               </label>
 
               <label className="text-sm font-medium text-slate-700 sm:col-span-2">
@@ -198,9 +242,9 @@ export default function AdminReelsPage() {
                   canSave ? "bg-[var(--store-primary)] hover:bg-[var(--store-primary-dark)]" : "bg-slate-400"
                 }`}
                 onClick={submit}
-                disabled={!canSave || saving}
+                disabled={!canSave || saving || uploading}
               >
-                {saving ? "Saving..." : "Save"}
+                {uploading ? "Uploading..." : saving ? "Saving..." : "Save"}
               </button>
             </div>
           </div>

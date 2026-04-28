@@ -11,8 +11,14 @@ function pickPayload(raw) {
     enabled: raw?.enabled !== false,
     order: Number.isFinite(Number(raw?.order)) ? Number(raw.order) : 0,
     title: toStr(raw?.title),
-    video: { url: toStr(raw?.video?.url || raw?.videoUrl) },
-    poster: { url: toStr(raw?.poster?.url || raw?.posterUrl) },
+    video: {
+      url: toStr(raw?.video?.url || raw?.videoUrl),
+      public_id: toStr(raw?.video?.public_id || raw?.videoPublicId),
+    },
+    poster: {
+      url: toStr(raw?.poster?.url || raw?.posterUrl),
+      public_id: toStr(raw?.poster?.public_id || raw?.posterPublicId),
+    },
   };
 }
 

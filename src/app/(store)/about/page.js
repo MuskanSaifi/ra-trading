@@ -1,5 +1,6 @@
 import AboutSection from "@/components/AboutSection";
 import PageBanner from "@/components/store/PageBanner";
+import AboutPageExtraSections from "@/components/store/AboutPageExtraSections";
 
 export default function AboutPage() {
   return (
@@ -11,6 +12,7 @@ export default function AboutPage() {
         crumbs={[{ label: "Home", href: "/" }, { label: "About" }]}
       />
       <AboutSection />
+      <AboutPageExtraSections />
     </div>
   );
 }

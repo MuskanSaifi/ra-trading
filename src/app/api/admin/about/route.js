@@ -27,6 +27,7 @@ const data = JSON.parse(formData.get("data"));
 
 
 const file = formData.get("image");
+const directorFile = formData.get("directorImage");
 
 
 if (file && file.name) {
@@ -46,6 +47,23 @@ stream.end(buffer);
 
 
 data.image = upload;
+}
+
+if (directorFile && directorFile.name) {
+const buffer = Buffer.from(await directorFile.arrayBuffer());
+
+const upload = await new Promise((resolve, reject) => {
+const stream = cloudinary.uploader.upload_stream(
+{ folder: "about-section" },
+(err, result) => {
+if (err) reject(err);
+else resolve({ url: result.secure_url, public_id: result.public_id });
+}
+);
+stream.end(buffer);
+});
+
+data.directorImage = upload;
 }
 
 

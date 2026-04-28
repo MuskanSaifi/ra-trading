@@ -10,6 +10,7 @@ export default function ViewCartFloatingButton() {
 
   const hiddenPages = ["/user-dashboard", "/admin-dashboard"];
   const isCategoryPage = pathname?.startsWith("/category/");
+  const isCartPage = pathname === "/cart";
 
 useEffect(() => {
   const loadCart = () => {
@@ -39,6 +40,7 @@ useEffect(() => {
   if (cartCount === 0) return null;
   if (hiddenPages.includes(pathname)) return null;
   if (isCategoryPage) return null;
+  if (isCartPage) return null;
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">

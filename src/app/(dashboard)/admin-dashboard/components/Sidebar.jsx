@@ -25,6 +25,7 @@ import {
   SlidersHorizontal,
   FileText,
   MessageSquareText,
+  Video,
 } from "lucide-react";
 
 const navItems = [
@@ -47,6 +48,7 @@ const navItems = [
   { name: "Delete Requests", href: "/admin-dashboard/delete-requests", icon: UserX },
   { name: "Sections", href: "/admin-dashboard/sections", icon: PanelsTopLeft },
   { name: "Home Graphics", href: "/admin-dashboard/graphics", icon: ImageIcon },
+  { name: "Reels", href: "/admin-dashboard/reels", icon: Video },
   { name: "Blog", href: "/admin-dashboard/blog", icon: BookOpen },
   { name: "About Us", href: "/admin-dashboard/about-us", icon: Info },
   { name: "Contact Form", href: "/admin-dashboard/contact-form", icon: Mail },

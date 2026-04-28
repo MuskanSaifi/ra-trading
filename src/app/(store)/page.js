@@ -6,6 +6,7 @@ import HomeProductTabs from "@/components/store/HomeProductTabs";
 import HomeLatestBlogs from "@/components/store/HomeLatestBlogs";
 import HomeBrands from "@/components/store/HomeBrands";
 import HomeGraphics from "@/components/store/HomeGraphics";
+import HomeReels from "@/components/store/HomeReels";
 import AboutSection from "@/components/AboutSection";
 import Reviews from "@/components/Reviews";
 import FAQ from "@/components/FAQ";
@@ -38,6 +39,7 @@ export default function Home() {
       <HomeGraphics />
       <Category/>
       <HomeBrands />
+      <HomeReels />
       <HomePromoBanners />
       <HomeProductTabs />
       <HomeLatestBlogs />

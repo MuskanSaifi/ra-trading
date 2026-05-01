@@ -76,39 +76,41 @@ export default function CategoriesPage() {
         </div>
 
         {/* Tablet+: horizontal scroll, larger cards */}
-        <div className="hidden md:flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-hide min-w-0 max-w-full">
-          {categories.map((cat) => (
-            <Link
-              key={cat?._id || cat.slug}
-              href={`/shop?category=${cat.slug}`}
-              className="snap-start shrink-0"
-            >
-              <div className="w-72 md:w-80 bg-white rounded-3xl p-8 border border-[var(--store-border)] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-[var(--store-primary)]/40 cursor-pointer">
-                <div className="flex justify-center">
-                  {cat?.image?.url ? (
-                    <img
-                      src={cat.image.url}
-                      alt={cat.name}
-                      className="w-36 h-36 object-cover rounded-full border-2 border-[var(--store-primary-soft)] bg-gray-100"
-                    />
-                  ) : (
-                    <div className="w-36 h-36 rounded-full bg-[var(--store-primary-soft)] flex items-center justify-center text-4xl font-black text-[var(--store-primary)]">
-                      {cat?.name?.[0]?.toUpperCase()}
-                    </div>
-                  )}
-                </div>
-
-                <h2 className="mt-6 text-center text-xl font-black text-[var(--store-ink)]">
-                  {cat.name}
-                </h2>
-
-                <p className="mt-2 text-center text-sm font-bold text-[var(--store-primary)]">
-                  Explore products →
-                </p>
-              </div>
-            </Link>
-          ))}
+     {/* Desktop: fixed grid (5–6 cards per row) */}
+<div className="hidden md:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+  {categories.map((cat) => (
+    <Link
+      key={cat?._id || cat.slug}
+      href={`/shop?category=${cat.slug}`}
+      className="w-full"
+    >
+      <div className="bg-white rounded-2xl p-5 border border-[var(--store-border)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-[var(--store-primary)]/40 cursor-pointer h-full flex flex-col items-center justify-between">
+        
+        <div className="flex justify-center">
+          {cat?.image?.url ? (
+            <img
+              src={cat.image.url}
+              alt={cat.name}
+              className="w-24 h-24 lg:w-28 lg:h-28 object-cover rounded-full border-2 border-[var(--store-primary-soft)] bg-gray-100"
+            />
+          ) : (
+            <div className="w-24 h-24 lg:w-28 lg:h-28 rounded-full bg-[var(--store-primary-soft)] flex items-center justify-center text-2xl font-black text-[var(--store-primary)]">
+              {cat?.name?.[0]?.toUpperCase()}
+            </div>
+          )}
         </div>
+
+        <h2 className="mt-4 text-center text-sm lg:text-base font-black text-[var(--store-ink)] line-clamp-2 min-h-[2.5rem]">
+          {cat.name}
+        </h2>
+
+        <p className="mt-2 text-xs font-bold text-[var(--store-primary)]">
+          Explore →
+        </p>
+      </div>
+    </Link>
+  ))}
+</div>
       </div>
     </section>
   );

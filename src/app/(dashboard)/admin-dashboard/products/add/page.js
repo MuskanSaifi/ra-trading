@@ -1,3 +1,5 @@
+// admin-dashboard/products/add
+
 // ✅ Full Updated Add Product Page - brand & category store _id
 "use client";
 

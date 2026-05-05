@@ -13,7 +13,7 @@ cloudinary.config({
 });
 
 // ✅ GET -> All categories
-export const GET = requireAdminAuth(async () => {
+export async function GET() {
   try {
     await connectDB();
     const categories = await Category.find().sort({ createdAt: -1 });
@@ -21,7 +21,7 @@ export const GET = requireAdminAuth(async () => {
   } catch (err) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
-});
+}
 
 // ✅ POST -> Add new category
 export const POST = requireAdminAuth(async (req) => {

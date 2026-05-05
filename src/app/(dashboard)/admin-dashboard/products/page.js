@@ -255,20 +255,21 @@ export default function ProductsPage() {
 
         {/* Brand dropdown */}
         <select
-          value={bulkFlags.categories}
+          value={bulkFlags.brand}
           onChange={(e) =>
-            setBulkFlags({ ...bulkFlags, categories: e.target.value })
+            setBulkFlags({ ...bulkFlags, brand: e.target.value })
           }
           className="border px-2 py-1 rounded"
         >
-          <option value="">Select Category (optional)</option>
-          {categories.map((c) => (
-            <option key={c._id} value={c._id}>
-              {c.name}
+          <option value="">Select Brand (optional)</option>
+          {brands.map((b) => (
+            <option key={b._id} value={b._id}>
+              {b.name}
             </option>
           ))}
         </select>
 
+        {/* Category dropdown */}
         <select
           value={bulkFlags.categories}
           onChange={(e) =>
@@ -278,7 +279,7 @@ export default function ProductsPage() {
         >
           <option value="">Select Category (optional)</option>
           {categories.map((c) => (
-            <option key={c._id || c.id || c.name} value={c.name}>
+            <option key={c._id} value={c._id}>
               {c.name}
             </option>
           ))}
@@ -354,18 +355,19 @@ export default function ProductsPage() {
                     {p.discount ? p.discount + "%" : "-"}
                   </td>
                   <td className="px-4 py-3 align-top">
-                    {brands.find((b) => b._id === p.brand)?.name || "-"}
+                    {p.brand?.name || brands.find((b) => String(b._id) === String(p.brand))?.name || "-"}
                   </td>
                   <td className="px-4 py-3 align-top">
                     {Array.isArray(p.categories)
                       ? p.categories
                           .map(
                             (id) =>
-                              categories.find((c) => c._id === id)?.name || ""
+                              categories.find((c) => String(c._id) === String(id))?.name || ""
                           )
                           .filter(Boolean)
                           .join(", ")
-                      : categories.find((c) => c._id === p.category)?.name ||
+                      : p.category?.name ||
+                        categories.find((c) => String(c._id) === String(p.category))?.name ||
                         "-"}
                   </td>
                   <td className="px-4 py-3 align-top">{p.stock ?? "-"}</td>

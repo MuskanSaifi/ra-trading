@@ -6,11 +6,16 @@ import Link from "next/link";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]); // Store all products for filtering
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState([]); // selected product IDs
   const [error, setError] = useState("");
+  
+  // Filter state
+  const [filterBrand, setFilterBrand] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
 
   // Bulk form state - note categories is an array
   const [bulkFlags, setBulkFlags] = useState({
@@ -44,8 +49,8 @@ export default function ProductsPage() {
 
         if (!mounted) return;
 
-        if (pData.success) setProducts(pData.products || []);
-        else setProducts([]);
+        if (pData.success) setAllProducts(pData.products || []);
+        else setAllProducts([]);
 
         if (bData.success) setBrands(bData.brands || []);
         else setBrands([]);
@@ -65,6 +70,32 @@ export default function ProductsPage() {
       mounted = false;
     };
   }, []);
+
+  // Apply filters whenever filter state changes
+  useEffect(() => {
+    let filtered = allProducts;
+
+    if (filterBrand) {
+      filtered = filtered.filter(
+        (p) =>
+          String(p.brand?._id || p.brand) === filterBrand ||
+          String(p.brand?.name) === filterBrand
+      );
+    }
+
+    if (filterCategory) {
+      filtered = filtered.filter((p) => {
+        const pCategoryId = Array.isArray(p.categories)
+          ? p.categories[0]
+          : p.category?._id || p.category;
+        return String(pCategoryId) === filterCategory;
+      });
+    }
+
+    setProducts(filtered);
+    // Reset selection when filters change
+    setSelected([]);
+  }, [filterBrand, filterCategory, allProducts]);
 
   // selection helpers
   const toggleSelect = (id) =>
@@ -128,7 +159,7 @@ export default function ProductsPage() {
         const refreshed = await fetch("/api/admin/products").then((r) =>
           r.json()
         );
-        if (refreshed.success) setProducts(refreshed.products || []);
+        if (refreshed.success) setAllProducts(refreshed.products || []);
         setSelected([]);
         // reset bulk flags (optional)
         setBulkFlags({
@@ -172,55 +203,131 @@ export default function ProductsPage() {
         </Link>
       </div>
 
-      {/* Bulk Edit */}
-      <div className="mb-4 p-4 bg-gray-100 rounded flex flex-wrap gap-3 items-center">
-        {/* Flags */}
-        <label className="flex items-center gap-2">
+      {/* FILTERS - Red Circle Section */}
+      <div className="mb-4 p-4 bg-blue-50 rounded border-2 border-red-500 flex flex-wrap gap-3 items-center">
+        <span className="font-semibold text-gray-700">🔍 Filters:</span>
+        
+        {/* Brand filter */}
+        <select
+          value={filterBrand}
+          onChange={(e) => setFilterBrand(e.target.value)}
+          className="border px-3 py-2 rounded bg-white"
+        >
+          <option value="">All Brands</option>
+          {brands.map((b) => (
+            <option key={b._id} value={b._id}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Category filter */}
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="border px-3 py-2 rounded bg-white"
+        >
+          <option value="">All Categories</option>
+          {categories.map((c) => (
+            <option key={c._id} value={c._id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Clear filters button */}
+        {(filterBrand || filterCategory) && (
+          <button
+            onClick={() => {
+              setFilterBrand("");
+              setFilterCategory("");
+            }}
+            className="bg-gray-500 text-white px-3 py-2 rounded hover:bg-gray-600 text-sm"
+          >
+            Clear Filters
+          </button>
+        )}
+
+        <span className="text-sm text-gray-600 ml-auto">
+          Showing {products.length} of {allProducts.length} products
+        </span>
+      </div>
+
+      {/* Bulk Edit - Yellow Circle Section */}
+      <div className="mb-4 p-4 bg-yellow-50 rounded border-2 border-yellow-400 flex flex-wrap gap-3 items-center">
+        <span className="font-semibold text-gray-700">✏️ Bulk Update:</span>
+        
+        {/* Flags - 3-state checkboxes */}
+        <label className="flex items-center gap-2 cursor-pointer group">
           <input
+            ref={(el) => {
+              if (el) el.indeterminate = bulkFlags.isTrending === null;
+            }}
             type="checkbox"
-            checked={bulkFlags.isTrending ?? false}
-            onChange={(e) =>
-              setBulkFlags({
-                ...bulkFlags,
-                isTrending: e.target.checked ? true : null,
-              })
-            }
-            className="w-4 h-4"
+            checked={bulkFlags.isTrending === true}
+            onChange={() => {
+              // Cycle: null → true → false → null
+              const current = bulkFlags.isTrending;
+              const next = current === null ? true : current === true ? false : null;
+              setBulkFlags({ ...bulkFlags, isTrending: next });
+            }}
+            className="w-4 h-4 cursor-pointer"
           />
-          <span className="text-sm">Trending</span>
+          <span className="text-sm">
+            Trending
+            {bulkFlags.isTrending === null && <span className="text-gray-400"> (no change)</span>}
+            {bulkFlags.isTrending === true && <span className="text-green-600"> (ON)</span>}
+            {bulkFlags.isTrending === false && <span className="text-red-600"> (OFF)</span>}
+          </span>
         </label>
 
-        <label className="flex items-center gap-2">
+        <label className="flex items-center gap-2 cursor-pointer group">
           <input
+            ref={(el) => {
+              if (el) el.indeterminate = bulkFlags.isFeatured === null;
+            }}
             type="checkbox"
-            checked={bulkFlags.isFeatured ?? false}
-            onChange={(e) =>
-              setBulkFlags({
-                ...bulkFlags,
-                isFeatured: e.target.checked ? true : null,
-              })
-            }
-            className="w-4 h-4"
+            checked={bulkFlags.isFeatured === true}
+            onChange={() => {
+              // Cycle: null → true → false → null
+              const current = bulkFlags.isFeatured;
+              const next = current === null ? true : current === true ? false : null;
+              setBulkFlags({ ...bulkFlags, isFeatured: next });
+            }}
+            className="w-4 h-4 cursor-pointer"
           />
-          <span className="text-sm">Featured</span>
+          <span className="text-sm">
+            Featured
+            {bulkFlags.isFeatured === null && <span className="text-gray-400"> (no change)</span>}
+            {bulkFlags.isFeatured === true && <span className="text-green-600"> (ON)</span>}
+            {bulkFlags.isFeatured === false && <span className="text-red-600"> (OFF)</span>}
+          </span>
         </label>
 
-        <label className="flex items-center gap-2">
+        <label className="flex items-center gap-2 cursor-pointer group">
           <input
+            ref={(el) => {
+              if (el) el.indeterminate = bulkFlags.isNewArrival === null;
+            }}
             type="checkbox"
-            checked={bulkFlags.isNewArrival ?? false}
-            onChange={(e) =>
-              setBulkFlags({
-                ...bulkFlags,
-                isNewArrival: e.target.checked ? true : null,
-              })
-            }
-            className="w-4 h-4"
+            checked={bulkFlags.isNewArrival === true}
+            onChange={() => {
+              // Cycle: null → true → false → null
+              const current = bulkFlags.isNewArrival;
+              const next = current === null ? true : current === true ? false : null;
+              setBulkFlags({ ...bulkFlags, isNewArrival: next });
+            }}
+            className="w-4 h-4 cursor-pointer"
           />
-          <span className="text-sm">New Arrival</span>
+          <span className="text-sm">
+            New Arrival
+            {bulkFlags.isNewArrival === null && <span className="text-gray-400"> (no change)</span>}
+            {bulkFlags.isNewArrival === true && <span className="text-green-600"> (ON)</span>}
+            {bulkFlags.isNewArrival === false && <span className="text-red-600"> (OFF)</span>}
+          </span>
         </label>
 
-        {/* Discount */}
+        {/* Numeric fields */}
         <input
           type="number"
           placeholder="Discount (%)"
@@ -228,10 +335,9 @@ export default function ProductsPage() {
           onChange={(e) =>
             setBulkFlags({ ...bulkFlags, discount: e.target.value })
           }
-          className="border px-2 py-1 rounded w-36"
+          className="border px-2 py-1 rounded text-sm w-32"
         />
 
-        {/* Price */}
         <input
           type="number"
           placeholder="Price"
@@ -239,10 +345,9 @@ export default function ProductsPage() {
           onChange={(e) =>
             setBulkFlags({ ...bulkFlags, price: e.target.value })
           }
-          className="border px-2 py-1 rounded w-36"
+          className="border px-2 py-1 rounded text-sm w-28"
         />
 
-        {/* Stock */}
         <input
           type="number"
           placeholder="Stock"
@@ -250,7 +355,7 @@ export default function ProductsPage() {
           onChange={(e) =>
             setBulkFlags({ ...bulkFlags, stock: e.target.value })
           }
-          className="border px-2 py-1 rounded w-36"
+          className="border px-2 py-1 rounded text-sm w-24"
         />
 
         {/* Brand dropdown */}
@@ -259,9 +364,9 @@ export default function ProductsPage() {
           onChange={(e) =>
             setBulkFlags({ ...bulkFlags, brand: e.target.value })
           }
-          className="border px-2 py-1 rounded"
+          className="border px-2 py-1 rounded text-sm"
         >
-          <option value="">Select Brand (optional)</option>
+          <option value="">Brand</option>
           {brands.map((b) => (
             <option key={b._id} value={b._id}>
               {b.name}
@@ -275,9 +380,9 @@ export default function ProductsPage() {
           onChange={(e) =>
             setBulkFlags({ ...bulkFlags, categories: e.target.value })
           }
-          className="border px-2 py-1 rounded"
+          className="border px-2 py-1 rounded text-sm"
         >
-          <option value="">Select Category (optional)</option>
+          <option value="">Category</option>
           {categories.map((c) => (
             <option key={c._id} value={c._id}>
               {c.name}
@@ -285,11 +390,12 @@ export default function ProductsPage() {
           ))}
         </select>
 
+        {/* Update button */}
         <button
           onClick={handleBulkUpdate}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold ml-auto"
         >
-          Update Selected
+          🔄 Update Selected ({selected.length})
         </button>
       </div>
 

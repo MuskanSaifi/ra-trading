@@ -6,7 +6,7 @@ export async function GET() {
   try {
     await connectDB();
 
-    const data = await ContactSection.findOne();
+    const data = await ContactSection.findOne().sort({ updatedAt: -1 });
 
     return NextResponse.json({
       success: true,
@@ -28,7 +28,7 @@ export async function POST(req) {
     await connectDB();
     const body = await req.json();
 
-    let existing = await ContactSection.findOne();
+    let existing = await ContactSection.findOne().sort({ updatedAt: -1 });
 
     let saved;
 

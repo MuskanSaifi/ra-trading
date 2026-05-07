@@ -9,6 +9,16 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+async function uploadToCloudinary(file, folder) {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream({ folder }, (err, result) => {
+      if (err) reject(err);
+      else resolve(result);
+    }).end(buffer);
+  });
+}
+
 export async function PUT(req) {
   try {
     await connectDB();
@@ -28,17 +38,7 @@ export async function PUT(req) {
     // ================= LOGO UPLOAD =================
     const logo = formData.get("logo");
     if (logo && logo.size > 0) {
-      const buffer = Buffer.from(await logo.arrayBuffer());
-
-      const uploaded = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          { folder: "contact-section" },
-          (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          }
-        ).end(buffer);
-      });
+      const uploaded = await uploadToCloudinary(logo, "contact-section");
 
       data.logo = {
         url: uploaded.secure_url,
@@ -49,19 +49,18 @@ export async function PUT(req) {
     // ================= FAVICON UPLOAD =================
     const favicon = formData.get("favicon");
     if (favicon && favicon.size > 0) {
-      const buffer = Buffer.from(await favicon.arrayBuffer());
-
-      const uploaded = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          { folder: "contact-section" },
-          (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          }
-        ).end(buffer);
-      });
+      const uploaded = await uploadToCloudinary(favicon, "contact-section");
 
       data.favicon = {
+        url: uploaded.secure_url,
+        public_id: uploaded.public_id,
+      };
+    }
+
+    const showcaseImage = formData.get("showcaseImage");
+    if (showcaseImage && showcaseImage.size > 0) {
+      const uploaded = await uploadToCloudinary(showcaseImage, "contact-section");
+      data.showcaseImage = {
         url: uploaded.secure_url,
         public_id: uploaded.public_id,
       };
@@ -73,17 +72,7 @@ export async function PUT(req) {
         const iconFile = formData.get(`socialIcon_${i}`);
 
         if (iconFile && iconFile.size > 0) {
-          const buffer = Buffer.from(await iconFile.arrayBuffer());
-
-          const uploaded = await new Promise((resolve, reject) => {
-            cloudinary.uploader.upload_stream(
-              { folder: "social-icons" },
-              (err, result) => {
-                if (err) reject(err);
-                else resolve(result);
-              }
-            ).end(buffer);
-          });
+          const uploaded = await uploadToCloudinary(iconFile, "social-icons");
 
           data.socialLinks[i].icon = {
             url: uploaded.secure_url,
@@ -94,11 +83,15 @@ export async function PUT(req) {
     }
 
     // ✅ SAFE UPDATE (NO VERSION ERROR EVER)
-    const updatedSection = await ContactSection.findOneAndUpdate(
-      {},
-      { $set: data },
-      { new: true, upsert: true }
-    );
+    const latest = await ContactSection.findOne().sort({ updatedAt: -1 }).select("_id");
+
+    const updatedSection = latest
+      ? await ContactSection.findByIdAndUpdate(
+          latest._id,
+          { $set: data },
+          { new: true, strict: false }
+        )
+      : await ContactSection.create(data);
 
     return NextResponse.json({
       success: true,

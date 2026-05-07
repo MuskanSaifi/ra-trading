@@ -1,12 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { Mail, Phone, Send, User, BadgeHelp, ShieldCheck, Star } from "lucide-react";
 
-export default function ContactForm() {
+const trustIconMap = {
+  shield: ShieldCheck,
+  star: Star,
+  support: BadgeHelp,
+  mail: Mail,
+  phone: Phone,
+};
+
+export default function ContactForm({ sectionData }) {
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
+    subject: "",
     message: "",
   });
 
@@ -98,7 +108,7 @@ export default function ContactForm() {
       if (json.success) {
         incrementLocalMessageCount(form.phone);
         setStatus("✅ Message sent successfully!");
-        setForm({ name: "", email: "", phone: "", message: "" });
+        setForm({ name: "", email: "", phone: "", subject: "", message: "" });
         setErrors({});
       } else {
         setStatus(`❌ ${json.error || "Failed to send message"}`);
@@ -116,108 +126,185 @@ export default function ContactForm() {
     setForm((prev) => ({ ...prev, [name]: value.trimStart() }));
   };
 
+  const inputBaseClass =
+    "w-full rounded-xl border border-[#e5d9d9] bg-white px-11 py-3 text-sm text-[#3f2a2a] placeholder:text-[#b8a9a9] outline-none transition focus:border-[#6f1d1b] focus:ring-2 focus:ring-[#6f1d1b]/20";
+
+  const trustBadges =
+    (sectionData?.trustBadges || []).length > 0
+      ? sectionData.trustBadges
+      : [
+          { title: "100% Secure", subtitle: "Your data is safe", iconName: "shield" },
+          { title: "Trusted", subtitle: "Happy customers", iconName: "star" },
+          { title: "Quality Support", subtitle: "We're here to help", iconName: "support" },
+        ];
+
   return (
-    <div className="bg-white shadow-lg rounded-xl p-6">
-      <h3 className="text-xl font-semibold mb-4 text-gray-900">
-        Contact Form
-      </h3>
+    <div className="relative z-20 rounded-[28px] border border-[#e5d9d9] bg-[#fdfbfb] p-6 shadow-[0_26px_60px_rgba(23,10,10,0.18)] md:p-8">
+      <div className="mb-6 text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#6f1d1b] text-white shadow-md">
+          <Mail size={20} />
+        </div>
+        <h3 className="text-3xl font-semibold text-[#2f1c1c]">
+          {sectionData?.formTitle?.trim() || "Send Us a Message"}
+        </h3>
+        <div className="mx-auto mt-3 h-[2px] w-16 rounded-full bg-[#6f1d1b]" />
+        {sectionData?.formSubtitle?.trim() ? (
+          <p className="mt-2 text-sm text-[#7a6666]">{sectionData.formSubtitle.trim()}</p>
+        ) : null}
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* ✅ Name */}
         <div>
-          <label className="block text-gray-700 mb-1">Name</label>
-          <input
-            name="name"
-            type="text"
-            value={form.name}
-            onChange={handleChange}
-            placeholder="Your Name"
-            className={`w-full border ${
-              errors.name ? "border-red-500" : "border-gray-300"
-            } rounded-lg p-2 focus:ring-2 focus:ring-blue-500`}
-          />
+          <label className="mb-1.5 block text-sm font-medium text-[#5f4b4b]">
+            Full Name
+          </label>
+          <div className="relative">
+            <User
+              size={16}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#b8a9a9]"
+            />
+            <input
+              name="name"
+              type="text"
+              value={form.name}
+              onChange={handleChange}
+              placeholder="Your full name"
+              className={`${inputBaseClass} ${
+                errors.name ? "border-red-500 focus:ring-red-200" : ""
+              }`}
+            />
+          </div>
           {errors.name && (
             <p className="text-red-500 text-sm mt-1">{errors.name}</p>
           )}
         </div>
 
-        {/* ✅ Email */}
-        <div>
-          <label className="block text-gray-700 mb-1">Email</label>
-          <input
-            name="email"
-            type="email"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="Your Email"
-            className={`w-full border ${
-              errors.email ? "border-red-500" : "border-gray-300"
-            } rounded-lg p-2 focus:ring-2 focus:ring-blue-500`}
-          />
-          {errors.email && (
-            <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-          )}
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-[#5f4b4b]">
+              Email Address
+            </label>
+            <div className="relative">
+              <Mail
+                size={16}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#b8a9a9]"
+              />
+              <input
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="Your email address"
+                className={`${inputBaseClass} ${
+                  errors.email ? "border-red-500 focus:ring-red-200" : ""
+                }`}
+              />
+            </div>
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+            )}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-[#5f4b4b]">
+              Phone Number
+            </label>
+            <div className="relative">
+              <Phone
+                size={16}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#b8a9a9]"
+              />
+              <input
+                name="phone"
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
+                value={form.phone}
+                onChange={(e) => {
+                  const onlyDigits = e.target.value
+                    .replace(/\D/g, "")
+                    .slice(0, 10);
+                  setForm((prev) => ({ ...prev, phone: onlyDigits }));
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const paste = (
+                    e.clipboardData || window.clipboardData
+                  ).getData("text");
+                  const onlyDigits = (paste || "").replace(/\D/g, "").slice(0, 10);
+                  setForm((prev) => ({ ...prev, phone: onlyDigits }));
+                }}
+                placeholder="Your phone number"
+                className={`${inputBaseClass} ${
+                  errors.phone ? "border-red-500 focus:ring-red-200" : ""
+                }`}
+              />
+            </div>
+            {errors.phone && (
+              <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+            )}
+          </div>
         </div>
 
-        {/* ✅ Phone — max 10 digits */}
         <div>
-          <label className="block text-gray-700 mb-1">Phone</label>
-          <input
-            name="phone"
-            type="tel"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={10}
-            value={form.phone}
-            onChange={(e) => {
-              const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 10);
-              setForm((prev) => ({ ...prev, phone: onlyDigits }));
-            }}
-            onPaste={(e) => {
-              e.preventDefault();
-              const paste = (e.clipboardData || window.clipboardData).getData("text");
-              const onlyDigits = (paste || "").replace(/\D/g, "").slice(0, 10);
-              setForm((prev) => ({ ...prev, phone: onlyDigits }));
-            }}
-            placeholder="10-digit phone number"
-            className={`w-full border ${
-              errors.phone ? "border-red-500" : "border-gray-300"
-            } rounded-lg p-2 focus:ring-2 focus:ring-blue-500`}
-          />
-          {errors.phone && (
-            <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-          )}
+          <label className="mb-1.5 block text-sm font-medium text-[#5f4b4b]">
+            Subject
+          </label>
+          <div className="relative">
+            <BadgeHelp
+              size={16}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#b8a9a9]"
+            />
+            <input
+              name="subject"
+              type="text"
+              value={form.subject || ""}
+              onChange={handleChange}
+              placeholder="How can we help you?"
+              className={inputBaseClass}
+            />
+          </div>
         </div>
 
-        {/* ✅ Message */}
         <div>
-          <label className="block text-gray-700 mb-1">Message</label>
-          <textarea
-            name="message"
-            rows="4"
-            value={form.message}
-            onChange={handleChange}
-            placeholder="Your Message"
-            className={`w-full border ${
-              errors.message ? "border-red-500" : "border-gray-300"
-            } rounded-lg p-2 focus:ring-2 focus:ring-blue-500`}
-          ></textarea>
+          <label className="mb-1.5 block text-sm font-medium text-[#5f4b4b]">
+            Message
+          </label>
+          <div className="relative">
+            <BadgeHelp
+              size={16}
+              className="pointer-events-none absolute left-4 top-4 text-[#b8a9a9]"
+            />
+            <textarea
+              name="message"
+              rows="4"
+              value={form.message}
+              onChange={handleChange}
+              placeholder="Type your message here..."
+              className={`${inputBaseClass} min-h-[120px] resize-y py-3 pl-11 ${
+                errors.message ? "border-red-500 focus:ring-red-200" : ""
+              }`}
+            ></textarea>
+          </div>
           {errors.message && (
             <p className="text-red-500 text-sm mt-1">{errors.message}</p>
           )}
         </div>
 
-        {/* ✅ Submit */}
         <button
           type="submit"
           disabled={loading}
-          className={`w-full flex justify-center items-center gap-2 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition ${
+          className={`w-full rounded-xl bg-[#6f1d1b] py-3 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(111,29,27,0.35)] transition hover:bg-[#5b1817] ${
             loading ? "opacity-70 cursor-not-allowed" : ""
           }`}
         >
+          <span className="inline-flex items-center justify-center gap-2">
+            <Send size={16} />
+            {loading ? "Sending..." : "Send Message"}
+          </span>
           {loading && (
             <svg
-              className="animate-spin h-5 w-5 text-white"
+              className="h-4 w-4 animate-spin text-white"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -237,12 +324,35 @@ export default function ContactForm() {
               ></path>
             </svg>
           )}
-          {loading ? "Sending..." : "Send Message"}
         </button>
       </form>
 
+      {trustBadges.length > 0 ? (
+        <div className="mt-5 grid grid-cols-1 gap-2 text-xs text-[#776363] sm:grid-cols-3">
+          {trustBadges.map((badge, index) => {
+            const Icon = trustIconMap[badge?.iconName] || ShieldCheck;
+            return (
+              <div
+                key={`${badge?.title || "badge"}-${index}`}
+                className="flex items-start gap-2 rounded-lg bg-[#f3eded] p-2.5"
+              >
+                <Icon size={14} className="mt-0.5 shrink-0 text-[#6f1d1b]" />
+                <div>
+                  <p>{badge?.title || "Trust"}</p>
+                  {badge?.subtitle ? (
+                    <p className="text-[11px] text-[#8a7676]">{badge.subtitle}</p>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
       {status && (
-        <p className="mt-3 text-center text-gray-900 font-medium">{status}</p>
+        <p className="mt-3 text-center text-sm font-medium text-[#4a3131]">
+          {status}
+        </p>
       )}
     </div>
   );

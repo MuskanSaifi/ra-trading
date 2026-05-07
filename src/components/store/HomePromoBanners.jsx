@@ -5,13 +5,13 @@ const promos = [
     title: "Featured picks",
     desc: "Curated quality — limited-time value.",
     href: "/shop?sort=lowToHigh",
-    tone: "from-amber-500 to-[var(--store-primary)]",
+    image: "/images/promo1.png", // 👈 yahan apni image daal
   },
   {
     title: "Trending now",
     desc: "What shoppers are adding to cart.",
     href: "/shop?sort=highToLow",
-    tone: "from-neutral-800 to-neutral-600",
+    image: "/images/promo2.png", // 👈 yahan apni image daal
   },
 ];
 
@@ -24,17 +24,35 @@ export default function HomePromoBanners() {
             <Link
               key={p.title}
               href={p.href}
-              className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${p.tone} p-8 md:p-10 text-white shadow-lg hover:shadow-xl transition-shadow`}
+              className="group relative overflow-hidden rounded-2xl h-[220px] md:h-[260px] shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              <div className="absolute -right-8 -bottom-8 h-40 w-40 rounded-full bg-white/10 blur-2xl group-hover:scale-110 transition-transform" />
-              <p className="text-xs font-semibold uppercase tracking-widest text-white/80">
-                Special
-              </p>
-              <h3 className="mt-2 text-2xl md:text-3xl font-extrabold">{p.title}</h3>
-              <p className="mt-2 text-sm text-white/90 max-w-sm">{p.desc}</p>
-              <span className="mt-6 inline-flex items-center text-sm font-bold border-b-2 border-white pb-0.5 group-hover:opacity-90">
-                Shop now →
-              </span>
+              {/* Background Image */}
+              <div
+                className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-500"
+                style={{ backgroundImage: `url(${p.image})` }}
+              />
+
+              {/* Dark Overlay */}
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition" />
+
+              {/* Content */}
+              <div className="relative z-10 p-6 md:p-8 text-white">
+                <p className="text-xs font-semibold uppercase tracking-widest text-white/80">
+                  Special
+                </p>
+
+                <h3 className="mt-2 text-2xl md:text-3xl font-extrabold">
+                  {p.title}
+                </h3>
+
+                <p className="mt-2 text-sm text-white/90 max-w-sm">
+                  {p.desc}
+                </p>
+
+                <span className="mt-6 inline-flex items-center text-sm font-bold border-b-2 border-white pb-0.5 group-hover:opacity-90">
+                  Shop now →
+                </span>
+              </div>
             </Link>
           ))}
         </div>

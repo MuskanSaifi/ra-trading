@@ -24,6 +24,37 @@ const SocialLinkSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const ContactFeatureSchema = new mongoose.Schema(
+  {
+    title: { type: String, default: "" },
+    description: { type: String, default: "" },
+    iconName: { type: String, default: "zap" },
+  },
+  { _id: false }
+);
+
+const TrustBadgeSchema = new mongoose.Schema(
+  {
+    title: { type: String, default: "" },
+    subtitle: { type: String, default: "" },
+    iconName: { type: String, default: "shield" },
+  },
+  { _id: false }
+);
+
+const ContactItemSchema = new mongoose.Schema(
+  {
+    type: {
+      type: String,
+      enum: ["phone", "email", "address"],
+      default: "phone",
+    },
+    value: { type: String, default: "" },
+    note: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
 const ContactSectionSchema = new mongoose.Schema(
   {
     title: { type: String, default: "" },
@@ -51,6 +82,14 @@ const ContactSectionSchema = new mongoose.Schema(
     formSubtitle: { type: String, default: "" },
 
     socialLinks: [SocialLinkSchema],
+    badgeText: { type: String, default: "Get In Touch" },
+    featureHighlights: [ContactFeatureSchema],
+    contactItems: [ContactItemSchema],
+    trustBadges: [TrustBadgeSchema],
+    showcaseImage: {
+      url: String,
+      public_id: String,
+    },
 
     status: {
       type: String,

@@ -113,9 +113,9 @@ export default function ShopListingClient({
 
     const basePath =
       brand !== "all" && category === "all"
-        ? `/shop/brand/${brand}`
+        ? `/brand/${brand}`
         : category !== "all" && brand === "all"
-        ? `/shop/category/${category}`
+        ? `/category/${category}`
         : "/shop";
 
     const query = params.toString();

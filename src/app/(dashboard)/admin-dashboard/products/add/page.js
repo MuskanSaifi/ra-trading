@@ -4,6 +4,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getApiErrorMessage } from "@/lib/clientApiError";
 
 // ✅ Define HERE
 const slugify = (text) =>
@@ -157,6 +158,12 @@ export default function AddProductPage() {
         body: formData,
       });
 
+      if (!res.ok) {
+        const message = await getApiErrorMessage(res, "Error adding product.");
+        alert(`❌ ${message}`);
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         alert("✅ Product Added Successfully!");
@@ -179,7 +186,7 @@ export default function AddProductPage() {
       }
     } catch (err) {
       console.error(err);
-      alert("⚠️ Error submitting form!");
+      alert("⚠️ Network error while submitting form.");
     } finally {
       setLoading(false);
     }

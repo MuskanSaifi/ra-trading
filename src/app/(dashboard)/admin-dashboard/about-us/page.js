@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import BlogRichEditor from "@/components/admin/BlogRichEditor";
+import { getApiErrorMessage } from "@/lib/clientApiError";
 
 export default function AboutAdminPage() {
   const [form, setForm] = useState({
@@ -26,6 +27,7 @@ export default function AboutAdminPage() {
 
   const [imageFile, setImageFile] = useState(null);
   const [directorImageFile, setDirectorImageFile] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   // ✅ Load existing About data
   useEffect(() => {
@@ -65,6 +67,7 @@ export default function AboutAdminPage() {
   // ✅ Submit Form
   async function handleSubmit(e) {
     e.preventDefault();
+    setSaving(true);
 
     const formData = new FormData();
     formData.append("data", JSON.stringify(form));
@@ -82,15 +85,23 @@ export default function AboutAdminPage() {
         body: formData,
       });
 
+      if (!res.ok) {
+        const message = await getApiErrorMessage(res, "Failed to save about page.");
+        alert(`❌ ${message}`);
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         alert("Saved successfully!");
         loadAbout();
       } else {
-        alert("Error saving data");
+        alert(`❌ ${data.error || "Error saving data"}`);
       }
     } catch (err) {
-      console.error(err);
+      alert("⚠️ Network error while saving about page.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -291,8 +302,9 @@ export default function AboutAdminPage() {
         <button
           className="w-full sm:w-auto px-8 py-3 rounded-xl bg-[#ff9900] text-[#1a1a1a] font-bold hover:opacity-95 transition"
           type="submit"
+          disabled={saving}
         >
-          Save
+          {saving ? "Saving..." : "Save"}
         </button>
       </form>
     </div>

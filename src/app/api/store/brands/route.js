@@ -10,7 +10,7 @@ export async function GET() {
   try {
     await connectDB();
     const brands = await Brand.find({ status: "active" })
-      .select("name slug image")
+      .select("name slug image description pageTitle metaTitle metaKeywords metaDescription contentHtml")
       .sort({ createdAt: -1 })
       .lean();
 

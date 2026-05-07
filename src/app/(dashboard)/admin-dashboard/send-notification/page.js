@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Send, Users, User, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getApiErrorMessage } from "@/lib/clientApiError";
 
 export default function SendNotificationPage() {
   const router = useRouter();
@@ -74,7 +75,16 @@ export default function SendNotificationPage() {
           ...formData,
         }),
       });
-      
+
+      if (!res.ok) {
+        const message = await getApiErrorMessage(
+          res,
+          "Failed to send notification."
+        );
+        alert(`❌ ${message}`);
+        return;
+      }
+
       const data = await res.json();
       
       if (data.success) {
@@ -90,11 +100,11 @@ export default function SendNotificationPage() {
         setSelectedUsers([]);
         setSelectAll(false);
       } else {
-        alert(data.message || "Failed to send notification");
+        alert(`❌ ${data.message || data.error || "Failed to send notification"}`);
       }
     } catch (error) {
       console.error("Error sending notification:", error);
-      alert("Error sending notification");
+      alert("⚠️ Network error while sending notification.");
     } finally {
       setLoading(false);
     }

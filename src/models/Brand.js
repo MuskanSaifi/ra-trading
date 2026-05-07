@@ -11,6 +11,11 @@ const BrandSchema = new mongoose.Schema(
       trim: true,
     },
     description: { type: String, default: "" },
+    pageTitle: { type: String, default: "" },
+    metaTitle: { type: String, default: "" },
+    metaKeywords: { type: String, default: "" },
+    metaDescription: { type: String, default: "" },
+    contentHtml: { type: String, default: "<p></p>" },
     image: {
       url: { type: String, required: true },
       public_id: { type: String, required: true },
@@ -20,4 +25,8 @@ const BrandSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.models.Brand || mongoose.model("Brand", BrandSchema);
+if (mongoose.models.Brand) {
+  delete mongoose.models.Brand;
+}
+
+export default mongoose.model("Brand", BrandSchema);

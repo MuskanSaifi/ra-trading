@@ -49,7 +49,7 @@ export default function CategoriesPage() {
           {categories.map((cat) => (
             <Link
               key={cat?._id || cat.slug}
-              href={`/shop?category=${cat.slug}`}
+              href={`/shop/category/${cat.slug}`}
               className="flex flex-col items-center rounded-xl border border-[var(--store-border)] bg-white p-2 active:scale-[0.98] transition-transform"
             >
               <div className="flex justify-center w-full">
@@ -81,7 +81,7 @@ export default function CategoriesPage() {
   {categories.map((cat) => (
     <Link
       key={cat?._id || cat.slug}
-      href={`/shop?category=${cat.slug}`}
+      href={`/shop/category/${cat.slug}`}
       className="w-full"
     >
       <div className="bg-white rounded-2xl p-5 border border-[var(--store-border)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-[var(--store-primary)]/40 cursor-pointer h-full flex flex-col items-center justify-between">

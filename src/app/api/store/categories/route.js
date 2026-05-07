@@ -21,7 +21,7 @@ export async function GET() {
   try {
     await connectDB();
     const categories = await Category.find()
-      .select("name slug image description")
+      .select("name slug image description pageTitle metaTitle metaKeywords metaDescription contentHtml")
       .sort({ createdAt: -1 })
       .lean();
     

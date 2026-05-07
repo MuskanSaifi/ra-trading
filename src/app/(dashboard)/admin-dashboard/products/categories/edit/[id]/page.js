@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { getApiErrorMessage } from "@/lib/clientApiError";
+import BlogRichEditor from "@/components/admin/BlogRichEditor";
 
 export default function EditCategoryPage() {
   const params = useParams();
@@ -11,11 +13,17 @@ export default function EditCategoryPage() {
     name: "",
     slug: "",
     description: "",
+    pageTitle: "",
+    metaTitle: "",
+    metaKeywords: "",
+    metaDescription: "",
+    contentHtml: "<p></p>",
     status: "active",
   });
 
   const [image, setImage] = useState(null); // {file} | {url, public_id}
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const generateSlug = (text) =>
     text
@@ -35,6 +43,11 @@ export default function EditCategoryPage() {
           name: data.category.name,
           slug: data.category.slug,
           description: data.category.description,
+          pageTitle: data.category.pageTitle || "",
+          metaTitle: data.category.metaTitle || "",
+          metaKeywords: data.category.metaKeywords || "",
+          metaDescription: data.category.metaDescription || "",
+          contentHtml: data.category.contentHtml || "<p></p>",
           status: data.category.status,
         });
 
@@ -63,22 +76,34 @@ export default function EditCategoryPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const formData = new FormData();
-    formData.append("data", JSON.stringify(form));
-    if (image?.file) formData.append("image", image.file);
+    setSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(form));
+      if (image?.file) formData.append("image", image.file);
 
-    const res = await fetch(`/api/admin/categories/${params.id}`, {
-      method: "PUT",
-      body: formData,
-    });
+      const res = await fetch(`/api/admin/categories/${params.id}`, {
+        method: "PUT",
+        body: formData,
+      });
 
-    const data = await res.json();
+      if (!res.ok) {
+        const message = await getApiErrorMessage(res, "Error updating category.");
+        alert(`❌ ${message}`);
+        return;
+      }
 
-    if (data.success) {
-      alert("✅ Category Updated!");
-      router.push("/admin-dashboard/products/categories");
-    } else {
-      alert("❌ " + data.error);
+      const data = await res.json();
+      if (data.success) {
+        alert("✅ Category Updated!");
+        router.push("/admin-dashboard/products/categories");
+      } else {
+        alert("❌ " + (data.error || "Error updating category."));
+      }
+    } catch (error) {
+      alert("⚠️ Network error while updating category.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -124,6 +149,47 @@ export default function EditCategoryPage() {
       />
 
       <input
+        type="text"
+        placeholder="Page Title"
+        value={form.pageTitle}
+        onChange={(e) => setForm({ ...form, pageTitle: e.target.value })}
+        className="w-full border px-3 py-2 rounded"
+      />
+
+      <input
+        type="text"
+        placeholder="Meta Title"
+        value={form.metaTitle}
+        onChange={(e) => setForm({ ...form, metaTitle: e.target.value })}
+        className="w-full border px-3 py-2 rounded"
+      />
+
+      <input
+        type="text"
+        placeholder="Meta Keywords (comma separated)"
+        value={form.metaKeywords}
+        onChange={(e) => setForm({ ...form, metaKeywords: e.target.value })}
+        className="w-full border px-3 py-2 rounded"
+      />
+
+      <textarea
+        placeholder="Meta Description"
+        value={form.metaDescription}
+        onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
+        className="w-full border px-3 py-2 rounded"
+        rows={3}
+      />
+
+      <div>
+        <p className="text-sm font-semibold mb-2">Page Content</p>
+        <BlogRichEditor
+          key={`category-edit-content-${params.id}`}
+          initialContent={form.contentHtml || "<p></p>"}
+          onChange={(html) => setForm((prev) => ({ ...prev, contentHtml: html }))}
+        />
+      </div>
+
+      <input
         type="file"
         onChange={(e) => setImage({ file: e.target.files[0] })}
       />
@@ -145,8 +211,12 @@ export default function EditCategoryPage() {
         <option value="inactive">Inactive</option>
       </select>
 
-      <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-        Update Category
+      <button
+        type="submit"
+        disabled={submitting}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        {submitting ? "Updating..." : "Update Category"}
       </button>
     </form>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getApiErrorMessage } from "@/lib/clientApiError";
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState([]);
@@ -15,6 +16,7 @@ export default function ReviewsPage() {
   });
 
   const [preview, setPreview] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // -----------------------------
   // FETCH ALL REVIEWS
@@ -55,37 +57,52 @@ export default function ReviewsPage() {
   // -----------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
 
-    const formData = new FormData();
-    formData.append("data", JSON.stringify(form));
+    try {
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(form));
 
-    if (form.photo) {
-      formData.append("photo", form.photo);
-    }
+      if (form.photo) {
+        formData.append("photo", form.photo);
+      }
 
-    const url = editingReview
-      ? `/api/admin/reviews/${editingReview._id}`
-      : "/api/admin/reviews";
+      const url = editingReview
+        ? `/api/admin/reviews/${editingReview._id}`
+        : "/api/admin/reviews";
 
-    const method = editingReview ? "PUT" : "POST";
+      const method = editingReview ? "PUT" : "POST";
 
-    const token = localStorage.getItem("adminToken");
-    const res = await fetch(url, {
-      method,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    });
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(url, {
+        method,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
 
-    if (res.status === 401) {
-      localStorage.removeItem("adminToken");
-      window.location.href = "/admin-login";
-      return;
-    }
-    const data = await res.json();
+      if (res.status === 401) {
+        localStorage.removeItem("adminToken");
+        window.location.href = "/admin-login";
+        return;
+      }
 
-    if (data.success) {
-      fetchReviews();
-      resetForm();
+      if (!res.ok) {
+        const message = await getApiErrorMessage(res, "Failed to save review.");
+        alert(`❌ ${message}`);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        fetchReviews();
+        resetForm();
+      } else {
+        alert(`❌ ${data.error || data.message || "Failed to save review."}`);
+      }
+    } catch (error) {
+      alert("⚠️ Network error while saving review.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -223,9 +240,14 @@ export default function ReviewsPage() {
 
             <button
               type="submit"
+              disabled={submitting}
               className="px-4 py-2 bg-blue-600 text-white rounded ml-auto"
             >
-              {editingReview ? "Update Review" : "Add Review"}
+              {submitting
+                ? "Saving..."
+                : editingReview
+                ? "Update Review"
+                : "Add Review"}
             </button>
           </div>
 

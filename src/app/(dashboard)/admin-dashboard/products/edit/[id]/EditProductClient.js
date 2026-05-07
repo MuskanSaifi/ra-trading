@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { getApiErrorMessage } from "@/lib/clientApiError";
 
 /* ✅ SLUGIFY: place outside the component */
 const slugify = (text) =>
@@ -190,16 +191,21 @@ export default function EditProductClient({ id }) {
         body: formData,
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        const message = await getApiErrorMessage(res, "Error updating product.");
+        alert(`❌ ${message}`);
+        return;
+      }
 
+      const data = await res.json();
       if (data.success) {
         alert("✅ Product Updated Successfully!");
         router.push("/admin-dashboard/products");
       } else {
-        alert("❌ " + data.error);
+        alert(`❌ ${data.error || "Error updating product."}`);
       }
     } catch (err) {
-      alert("⚠️ Error updating product!");
+      alert("⚠️ Network error while updating product.");
     } finally {
       setLoading(false);
     }

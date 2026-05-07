@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getApiErrorMessage } from "@/lib/clientApiError";
 
 export default function ContactUsAdminPage() {
   const [form, setForm] = useState({
@@ -117,6 +118,15 @@ export default function ContactUsAdminPage() {
         method: "PUT",
         body: formData,
       });
+
+      if (!res.ok) {
+        const message = await getApiErrorMessage(
+          res,
+          "Failed to update contact section."
+        );
+        setMessage(`❌ ${message}`);
+        return;
+      }
 
       const result = await res.json();
 

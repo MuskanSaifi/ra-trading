@@ -39,7 +39,7 @@ export default function HomeBrands() {
         {brands.map((brand) => (
           <Link
             key={brand._id}
-            href={`/shop?brand=${encodeURIComponent(brand.slug)}`}
+            href={`/shop/brand/${encodeURIComponent(brand.slug)}`}
             className="group flex flex-col items-center rounded-2xl border border-[var(--store-border)] bg-[var(--store-surface)] p-3 md:p-4 hover:border-[var(--store-primary)]/40 hover:shadow-md transition"
           >
             {brand?.image?.url ? (

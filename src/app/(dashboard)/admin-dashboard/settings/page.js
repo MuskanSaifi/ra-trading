@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Loader2, CheckCircle2, XCircle, LogOut } from "lucide-react";
+import { getApiErrorMessage } from "@/lib/clientApiError";
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [zonesLoading, setZonesLoading] = useState(true);
+  const [zoneSaving, setZoneSaving] = useState(false);
   const [zones, setZones] = useState([]);
   const [zoneForm, setZoneForm] = useState({
     country: "India",
@@ -111,6 +113,12 @@ export default function SettingsPage() {
         }),
       });
 
+      if (!res.ok) {
+        const message = await getApiErrorMessage(res, "Failed to save settings.");
+        setMsg({ type: "error", text: message });
+        return;
+      }
+
       const data = await res.json();
 
       if (data.success) {
@@ -143,12 +151,21 @@ export default function SettingsPage() {
       setMsg({ type: "error", text: "City is required." });
       return;
     }
+    setZoneSaving(true);
     try {
       const res = await fetch("/api/admin/delivery-zones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(zoneForm),
       });
+      if (!res.ok) {
+        const message = await getApiErrorMessage(
+          res,
+          "Failed to add delivery zone."
+        );
+        setMsg({ type: "error", text: message });
+        return;
+      }
       const data = await res.json();
       if (!data.success) {
         setMsg({ type: "error", text: data.message || "Failed to add delivery zone" });
@@ -159,6 +176,8 @@ export default function SettingsPage() {
       setMsg({ type: "success", text: "Delivery locations updated!" });
     } catch {
       setMsg({ type: "error", text: "Failed to update delivery locations" });
+    } finally {
+      setZoneSaving(false);
     }
   };
 
@@ -360,9 +379,10 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={handleAddZone}
-              className="bg-[var(--store-primary)] text-white px-5 py-2 rounded-md font-semibold hover:bg-[var(--store-primary-dark)]"
+              disabled={zoneSaving}
+              className="bg-[var(--store-primary)] text-white px-5 py-2 rounded-md font-semibold hover:bg-[var(--store-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add / Update delivery locations
+              {zoneSaving ? "Updating..." : "Add / Update delivery locations"}
             </button>
           </div>
 

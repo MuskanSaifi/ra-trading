@@ -11,6 +11,11 @@ const CategorySchema = new mongoose.Schema(
       trim: true,
     },
     description: String,
+    pageTitle: { type: String, default: "" },
+    metaTitle: { type: String, default: "" },
+    metaKeywords: { type: String, default: "" },
+    metaDescription: { type: String, default: "" },
+    contentHtml: { type: String, default: "<p></p>" },
     image: {
       url: String,
       public_id: String, // cloudinary public id
@@ -20,4 +25,8 @@ const CategorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.models.Category || mongoose.model("Category", CategorySchema);
+if (mongoose.models.Category) {
+  delete mongoose.models.Category;
+}
+
+export default mongoose.model("Category", CategorySchema);

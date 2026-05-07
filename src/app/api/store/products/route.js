@@ -125,8 +125,8 @@ export async function GET(req) {
     // Optimize: Only calculate lowStock if explicitly requested (reduces DB queries)
     const includeLowStock = searchParams.get("includeLowStock") === "true";
     
-    // Get total count for pagination (only if needed for pagination)
-    const total = page > 1 || includeLowStock ? await Product.countDocuments(query) : 0;
+    // Always include total count so storefront pagination/UI remains correct on page 1.
+    const total = await Product.countDocuments(query);
 
     // Fetch products with pagination, lean, and field selection
     const products = await Product.find(query)
@@ -161,7 +161,8 @@ export async function GET(req) {
       {
         success: true,
         products,
-        ...(total > 0 && { total, totalPages: Math.ceil(total / limit) }),
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
         page,
         limit,
         ...(includeLowStock && { lowStock: lowStockCount })

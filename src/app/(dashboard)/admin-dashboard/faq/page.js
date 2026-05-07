@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getApiErrorMessage } from "@/lib/clientApiError";
 
 export default function FAQAdminPage() {
   const [faqs, setFaqs] = useState([]);
@@ -11,6 +12,7 @@ export default function FAQAdminPage() {
     question: "",
     answer: "",
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchFaqs = async () => {
     const res = await fetch("/api/admin/faq");
@@ -28,6 +30,7 @@ export default function FAQAdminPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
 
     const url = editing
       ? `/api/admin/faq/${editing._id}`
@@ -35,18 +38,32 @@ export default function FAQAdminPage() {
 
     const method = editing ? "PUT" : "POST";
 
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    const data = await res.json();
+      if (!res.ok) {
+        const message = await getApiErrorMessage(res, "Failed to save FAQ.");
+        alert(`❌ ${message}`);
+        return;
+      }
 
-    if (data.success) {
-      setOpen(false);
-      resetForm();
-      fetchFaqs();
+      const data = await res.json();
+
+      if (data.success) {
+        setOpen(false);
+        resetForm();
+        fetchFaqs();
+      } else {
+        alert(`❌ ${data.error || data.message || "Failed to save FAQ."}`);
+      }
+    } catch (error) {
+      alert("⚠️ Network error while saving FAQ.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -170,9 +187,10 @@ export default function FAQAdminPage() {
 
                 <button
                   type="submit"
+                  disabled={submitting}
                   className="px-4 py-2 bg-blue-600 text-white rounded"
                 >
-                  {editing ? "Update" : "Save"}
+                  {submitting ? "Saving..." : editing ? "Update" : "Save"}
                 </button>
               </div>
             </form>

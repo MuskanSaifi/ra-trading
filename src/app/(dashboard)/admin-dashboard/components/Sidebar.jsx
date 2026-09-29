@@ -26,6 +26,7 @@ import {
   FileText,
   MessageSquareText,
   Video,
+  CreditCard,
 } from "lucide-react";
 
 const navItems = [
@@ -44,6 +45,11 @@ const navItems = [
     ],
   },
   { name: "Orders", href: "/admin-dashboard/orders", icon: ShoppingBag },
+  {
+    name: "Integrations",
+    href: "/admin-dashboard/integrations",
+    icon: CreditCard,
+  },
   { name: "Users", href: "/admin-dashboard/users", icon: Users },
   { name: "Delete Requests", href: "/admin-dashboard/delete-requests", icon: UserX },
   { name: "Sections", href: "/admin-dashboard/sections", icon: PanelsTopLeft },

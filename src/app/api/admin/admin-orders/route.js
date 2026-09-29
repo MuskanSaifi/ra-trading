@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import Order from "@/models/Order";
 
@@ -26,7 +26,7 @@ export async function GET(req) {
 
     // Fetch orders with pagination, lean, and field selection (reduces data transfer)
     const orders = await Order.find(query)
-      .select("items address totalAmount paymentMode paymentStatus status expectedDelivery createdAt userId")
+      .select("items address totalAmount paymentMode paymentStatus status expectedDelivery createdAt userId awb courierName trackingUrl labelUrl shipmentId shiprocketOrderId shippedAt")
       .populate("items.productId", "name images price slug") // Added slug for navigation
       .populate("userId", "name email phone")
       .sort({ createdAt: -1 })
@@ -47,7 +47,7 @@ export async function GET(req) {
       }
     });
   } catch (err) {
-    console.error("❌ Get Admin Orders Error:", err);
+    console.error("âŒ Get Admin Orders Error:", err);
     return NextResponse.json(
       { success: false, message: "Server error" },
       { status: 500 }
@@ -70,10 +70,11 @@ export async function PATCH(req) {
 
     return NextResponse.json({ success: true, order });
   } catch (err) {
-    console.error("❌ Update Status Error:", err);
+    console.error("âŒ Update Status Error:", err);
     return NextResponse.json(
       { success: false, message: "Status update failed" },
       { status: 500 }
     );
   }
 }
+

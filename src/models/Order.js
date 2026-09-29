@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+﻿const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
   {
@@ -9,17 +9,19 @@ const orderSchema = new mongoose.Schema(
         productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
         name: String,
         price: Number,
-        quantity: Number
+        quantity: Number,
       },
     ],
 
     address: {
       name: String,
       phone: String,
+      alternatePhone: String,
       street: String,
       city: String,
       state: String,
       pincode: String,
+      country: { type: String, default: "India" },
     },
 
     totalAmount: Number,
@@ -27,10 +29,20 @@ const orderSchema = new mongoose.Schema(
     paymentStatus: { type: String, default: "Pending" },
     razorpayOrderId: { type: String },
     razorpayPaymentId: { type: String },
+    cashfreeOrderId: { type: String },
+    cashfreePaymentId: { type: String },
 
     status: { type: String, default: "Pending" },
     cancelReason: String,
-    expectedDelivery: Date
+    expectedDelivery: Date,
+
+    shiprocketOrderId: { type: String },
+    shipmentId: { type: String },
+    awb: { type: String },
+    courierName: { type: String },
+    trackingUrl: { type: String },
+    labelUrl: { type: String },
+    shippedAt: { type: Date },
   },
   { timestamps: true }
 );

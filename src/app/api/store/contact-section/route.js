@@ -15,7 +15,7 @@ const defaultPayload = {
     "Have questions, need a quote, or want to start your own brand? Our team is ready to assist you.",
   description: "",
   address: "India",
-  phone: "+91 98765 43210",
+  phone: "+91 97169 94211",
   email: "support@example.com",
   badgeText: "Get In Touch",
   logo: { url: "" },
@@ -28,7 +28,7 @@ const defaultPayload = {
     { title: "Reliable & Trusted", description: "Quality you can count on", iconName: "shield" },
   ],
   contactItems: [
-    { type: "phone", value: "+91 98765 43210", note: "Mon - Sat (10:00 AM - 7:00 PM)" },
+    { type: "phone", value: "+91 97169 94211", note: "Mon - Sat (10:00 AM - 7:00 PM)" },
     { type: "email", value: "support@example.com", note: "We'll reply as soon as possible" },
     { type: "address", value: "India", note: "Shipping all over India" },
   ],

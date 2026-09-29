@@ -5,18 +5,18 @@ import { useRouter } from "next/navigation";
 import countriesData from "@/lib/countries.json" assert { type: "json" };
 import Image from "next/image";
 
-function loadRazorpayScript() {
+function loadCashfreeScript() {
   return new Promise((resolve) => {
     if (typeof window === "undefined") {
       resolve(false);
       return;
     }
-    if (window.Razorpay) {
+    if (window.Cashfree) {
       resolve(true);
       return;
     }
     const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
     script.onload = () => resolve(true);
     script.onerror = () => resolve(false);
     document.body.appendChild(script);
@@ -38,6 +38,10 @@ export default function CheckoutClient() {
   const [loading, setLoading] = useState(false);
   const [sameAsProfile, setSameAsProfile] = useState(true);
   const [deliveryCheck, setDeliveryCheck] = useState(null);
+  const [payOptions, setPayOptions] = useState({
+    cashfreeEnabled: true,
+    codEnabled: true,
+  });
 
   const [address, setAddress] = useState({
     name: "",
@@ -94,16 +98,36 @@ export default function CheckoutClient() {
 
   const codAllowed = useMemo(
     () =>
+      payOptions.codEnabled !== false &&
       cartItems.length > 0 &&
       cartItems.every((i) => i.codAvailable !== false),
-    [cartItems]
+    [cartItems, payOptions.codEnabled]
   );
 
+  const cashfreeAllowed = payOptions.cashfreeEnabled !== false;
+
   useEffect(() => {
-    if (!codAllowed && paymentMode === "COD") {
-      setPaymentMode("Razorpay");
+    fetch("/api/store/payment-options")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.success) {
+          setPayOptions({
+            cashfreeEnabled: d.cashfreeEnabled !== false && d.razorpayEnabled !== false,
+            codEnabled: d.codEnabled !== false,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!codAllowed && paymentMode === "COD" && cashfreeAllowed) {
+      setPaymentMode("Cashfree");
     }
-  }, [codAllowed, paymentMode]);
+    if (!cashfreeAllowed && paymentMode === "Cashfree" && codAllowed) {
+      setPaymentMode("COD");
+    }
+  }, [codAllowed, paymentMode, cashfreeAllowed]);
 
   const effectiveAddress = useMemo(() => {
     if (!user) return address;
@@ -176,7 +200,7 @@ export default function CheckoutClient() {
       quantity: i.quantity,
     }));
 
-  const placeOrderRequest = async (razorpay) => {
+  const placeOrderRequest = async (cashfree) => {
     const res = await fetch("/api/user/order/place", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -185,8 +209,8 @@ export default function CheckoutClient() {
         address: effectiveAddress,
         items: orderLineItems(),
         totalAmount: total,
-        paymentMode: razorpay ? "Razorpay" : paymentMode,
-        ...(razorpay ? { razorpay } : {}),
+        paymentMode: cashfree ? "Cashfree" : paymentMode,
+        ...(cashfree ? { cashfree } : {}),
       }),
     });
     return res.json();
@@ -216,18 +240,23 @@ export default function CheckoutClient() {
     }
 
     if (paymentMode === "COD" && !codAllowed) {
-      return alert("COD is not available for items in your cart. Pay online with Razorpay.");
+      return alert("COD is not available for items in your cart. Pay online with Cashfree.");
     }
 
-    if (paymentMode === "Razorpay") {
+    if (paymentMode === "Cashfree") {
       setLoading(true);
       try {
-        const co = await fetch("/api/payments/razorpay/create-order", {
+        const co = await fetch("/api/payments/cashfree/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: user._id,
             items: orderLineItems(),
+            customer: {
+              name: addr.name,
+              phone: addr.phone,
+              email: user.email || "",
+            },
           }),
         });
         const jd = await co.json();
@@ -237,66 +266,40 @@ export default function CheckoutClient() {
           return;
         }
 
-        const scriptOk = await loadRazorpayScript();
-        if (!scriptOk || !window.Razorpay) {
-          alert("Could not load Razorpay checkout.");
+        const scriptOk = await loadCashfreeScript();
+        if (!scriptOk || !window.Cashfree) {
+          alert("Could not load Cashfree checkout.");
           setLoading(false);
           return;
         }
 
-        const options = {
-          key: jd.keyId,
-          amount: jd.amount,
-          currency: jd.currency,
-          order_id: jd.orderId,
-          name: "Checkout",
-          description: "Order payment",
-          handler: async function (response) {
-            setLoading(true);
-            try {
-              const data = await placeOrderRequest({
-                orderId: response.razorpay_order_id,
-                paymentId: response.razorpay_payment_id,
-                signature: response.razorpay_signature,
-              });
-              if (data.success) {
-                localStorage.removeItem("cart");
-                window.dispatchEvent(
-                  new CustomEvent("cartUpdated", { detail: 0 })
-                );
-                alert("Order placed successfully!");
-                router.push("/user-dashboard/orders");
-              } else {
-                alert(
-                  data.message ||
-                    "Payment received but order failed — contact support with your payment ID."
-                );
-              }
-            } catch {
-              alert("Network error confirming your order.");
-            } finally {
-              setLoading(false);
-            }
-          },
-          prefill: {
-            name: addr.name,
-            contact: addr.phone,
-            email: user.email || "",
-          },
-          theme: { color: "var(--store-primary)" },
-          modal: {
-            ondismiss: () => setLoading(false),
-          },
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.on("payment.failed", () => {
-          alert("Payment failed. Try again or pick another method.");
-          setLoading(false);
+        const cashfree = window.Cashfree({ mode: jd.mode || "sandbox" });
+        const result = await cashfree.checkout({
+          paymentSessionId: jd.paymentSessionId,
+          redirectTarget: "_modal",
         });
-        rzp.open();
+
+        if (result?.error) {
+          alert(result.error.message || "Payment cancelled");
+          setLoading(false);
+          return;
+        }
+
+        const data = await placeOrderRequest({ orderId: jd.orderId });
+        if (data.success) {
+          localStorage.removeItem("cart");
+          window.dispatchEvent(new CustomEvent("cartUpdated", { detail: 0 }));
+          alert("Order placed successfully!");
+          router.push("/user-dashboard/orders");
+        } else {
+          alert(
+            data.message ||
+              "Payment may have succeeded but the order was not saved. Contact support with your Cashfree order id."
+          );
+        }
       } catch {
         alert("Could not start payment.");
+      } finally {
         setLoading(false);
       }
       return;
@@ -593,11 +596,20 @@ export default function CheckoutClient() {
                   {codAllowed && (
                     <option value="COD">Cash on Delivery</option>
                   )}
-                  <option value="Razorpay">Razorpay (Card / UPI / Netbanking)</option>
+                  {cashfreeAllowed && (
+                    <option value="Cashfree">
+                      Cashfree (Card / UPI / Netbanking)
+                    </option>
+                  )}
                 </select>
-                {!codAllowed && (
+                {!codAllowed && cashfreeAllowed && (
                   <p className="text-xs text-amber-800">
                     COD is disabled because at least one product is online-payment only.
+                  </p>
+                )}
+                {!cashfreeAllowed && !codAllowed && (
+                  <p className="text-xs text-red-700">
+                    No payment methods available. Contact support.
                   </p>
                 )}
               </div>
@@ -609,11 +621,11 @@ export default function CheckoutClient() {
                 className="w-full mt-4 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition disabled:opacity-60"
               >
                 {loading
-                  ? paymentMode === "Razorpay"
+                  ? paymentMode === "Cashfree"
                     ? "Opening payment…"
                     : "Placing Order..."
-                  : paymentMode === "Razorpay"
-                    ? "Pay with Razorpay"
+                  : paymentMode === "Cashfree"
+                    ? "Pay with Cashfree"
                     : "Place Order"}
               </button>
             </div>

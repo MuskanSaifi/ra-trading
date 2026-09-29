@@ -1,4 +1,4 @@
-// /app/api/user/order/user-orders/route.js
+﻿// /app/api/user/order/user-orders/route.js
 import { NextResponse } from "next/server";
 import Order from "@/models/Order";
 import { connectDB } from "@/lib/dbConnect";
@@ -21,9 +21,9 @@ export async function GET(req) {
     // Get total count
     const total = await Order.countDocuments({ userId });
 
-    // ✅ Populate product details inside items with pagination, lean, and field selection
+    // âœ… Populate product details inside items with pagination, lean, and field selection
     const orders = await Order.find({ userId })
-      .select("items address totalAmount paymentMode paymentStatus status expectedDelivery createdAt")
+      .select("items address totalAmount paymentMode paymentStatus status expectedDelivery createdAt awb courierName trackingUrl")
       .populate("items.productId", "name images price slug") // Added slug for mobile app navigation
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -42,3 +42,4 @@ export async function GET(req) {
     return NextResponse.json({ success: false, message: error.message });
   }
 }
+

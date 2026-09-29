@@ -4,7 +4,7 @@ import Order from "@/models/Order";
 import User from "@/models/User";
 import { notifyAdmin } from "@/lib/notificationHelper";
 import { notifyUser } from "@/lib/notificationHelper";
-import { getRazorpayInstance, verifyRazorpaySignature } from "@/lib/razorpay";
+import { getCashfreeOrder, getCashfreePayments } from "@/lib/cashfree";
 import { validateCartItems, assertCodAllowedForCart } from "@/lib/orderPricing";
 import { checkDeliveryCoverage } from "@/lib/deliveryCoverage";
 
@@ -13,7 +13,7 @@ export async function POST(req) {
     await connectDB();
 
     const body = await req.json();
-    const { userId, address, items, paymentMode, razorpay } = body;
+    const { userId, address, items, paymentMode, cashfree } = body;
 
     if (!userId || !items?.length) {
       return NextResponse.json(
@@ -48,7 +48,7 @@ export async function POST(req) {
     const shipping = verifiedSubtotal > 0 ? 99 : 0;
     const finalTotal = verifiedSubtotal + shipping;
 
-    const mode = paymentMode === "Razorpay" ? "Razorpay" : "COD";
+    const mode = paymentMode === "Cashfree" ? "Cashfree" : "COD";
 
     if (mode === "COD") {
       const cod = assertCodAllowedForCart(byId, normalized);
@@ -58,62 +58,52 @@ export async function POST(req) {
     }
 
     let paymentStatus = "Pending";
-    let razorpayOrderId;
-    let razorpayPaymentId;
+    let cashfreeOrderId;
+    let cashfreePaymentId;
 
-    if (mode === "Razorpay") {
-      const { orderId, paymentId, signature } = razorpay || {};
-      if (!orderId || !paymentId || !signature) {
+    if (mode === "Cashfree") {
+      const orderId = cashfree?.orderId;
+      if (!orderId) {
         return NextResponse.json(
-          { success: false, message: "Razorpay payment details missing" },
+          { success: false, message: "Cashfree payment details missing" },
           { status: 400 }
         );
       }
 
-      if (!verifyRazorpaySignature(orderId, paymentId, signature)) {
-        return NextResponse.json(
-          { success: false, message: "Payment verification failed" },
-          { status: 400 }
-        );
-      }
-
-      const instance = getRazorpayInstance();
-      if (!instance) {
-        return NextResponse.json(
-          { success: false, message: "Payments not configured" },
-          { status: 503 }
-        );
-      }
-
-      const payment = await instance.payments.fetch(paymentId);
-      if (payment.order_id !== orderId) {
-        return NextResponse.json(
-          { success: false, message: "Payment order mismatch" },
-          { status: 400 }
-        );
-      }
-
-      if (payment.status !== "captured" && payment.status !== "authorized") {
+      const cfOrder = await getCashfreeOrder(orderId);
+      if (String(cfOrder?.order_status || "").toUpperCase() !== "PAID") {
         return NextResponse.json(
           { success: false, message: "Payment not completed" },
           { status: 400 }
         );
       }
 
-      const expectedPaise = Math.round(finalTotal * 100);
-      if (Number(payment.amount) !== expectedPaise) {
+      const paidAmount = Number(cfOrder.order_amount);
+      if (Math.abs(paidAmount - finalTotal) > 0.5) {
         return NextResponse.json(
           { success: false, message: "Payment amount mismatch" },
           { status: 400 }
         );
       }
 
+      let paymentId = cashfree?.paymentId || "";
+      try {
+        const payments = await getCashfreePayments(orderId);
+        const list = Array.isArray(payments) ? payments : payments?.payments || [];
+        const successPay = list.find(
+          (p) => String(p.payment_status || "").toUpperCase() === "SUCCESS"
+        );
+        paymentId = successPay?.cf_payment_id || paymentId;
+      } catch {
+        // Order is already PAID; payment id is optional
+      }
+
       paymentStatus = "Paid";
-      razorpayOrderId = orderId;
-      razorpayPaymentId = paymentId;
-    } else if (paymentMode === "Online") {
+      cashfreeOrderId = orderId;
+      cashfreePaymentId = paymentId ? String(paymentId) : undefined;
+    } else if (paymentMode === "Online" || paymentMode === "Razorpay") {
       return NextResponse.json(
-        { success: false, message: "Please use Razorpay for online payment" },
+        { success: false, message: "Please use Cashfree for online payment" },
         { status: 400 }
       );
     }
@@ -164,8 +154,8 @@ export async function POST(req) {
       totalAmount: finalTotal,
       paymentMode: mode,
       paymentStatus,
-      razorpayOrderId,
-      razorpayPaymentId,
+      cashfreeOrderId,
+      cashfreePaymentId,
       status: "Pending",
       expectedDelivery,
     });

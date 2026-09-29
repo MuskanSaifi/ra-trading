@@ -107,10 +107,10 @@ export default function HelpPage() {
           <h2 className="text-4xl font-semibold text-gray-800 mb-6 text-center">Contact Us</h2>
           <div className="flex flex-col sm:flex-row justify-around items-start sm:items-center gap-6 mb-8">
             <div className="flex items-center gap-2 text-gray-700">
-              <FaEnvelope className="text-blue-500" /> support@myshop.com
+              <FaEnvelope className="text-blue-500" /> ratrading417@gmail.com
             </div>
             <div className="flex items-center gap-2 text-gray-700">
-              <FaPhone className="text-green-500" /> +91 98765 43210
+              <FaPhone className="text-green-500" /> +91 97169 94211
             </div>
             <div className="flex items-center gap-2 text-gray-700">
               <FaComments className="text-purple-500" /> Live Chat Available 9AM-6PM IST

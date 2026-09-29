@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 
@@ -107,7 +107,7 @@ export default function UserOrdersPage() {
           {/* Expected Delivery */}
           {order.expectedDelivery && (
             <p className="text-sm text-gray-700">
-              📦 Expected Delivery:{" "}
+              ðŸ“¦ Expected Delivery:{" "}
               <strong>{new Date(order.expectedDelivery).toDateString()}</strong>
             </p>
           )}
@@ -115,13 +115,13 @@ export default function UserOrdersPage() {
           {/* Cancel Reason shown */}
           {order.cancelReason && (
             <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
-              ❗ <strong>Cancel Reason:</strong> {order.cancelReason}
+              â— <strong>Cancel Reason:</strong> {order.cancelReason}
             </p>
           )}
 
           {/* TOTAL */}
           <p className="font-bold text-lg text-purple-700">
-            Total: ₹{Number(order.totalAmount).toLocaleString()}
+            Total: â‚¹{Number(order.totalAmount).toLocaleString()}
           </p>
 
           {/* Cancel Button */}
@@ -151,7 +151,7 @@ export default function UserOrdersPage() {
                   <p className="font-medium">{item.productId?.name || item.name}</p>
                   <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                   <p className="text-sm text-gray-600">
-                    Price: ₹{Number(item.price).toLocaleString()}
+                    Price: â‚¹{Number(item.price).toLocaleString()}
                   </p>
                 </div>
               </div>

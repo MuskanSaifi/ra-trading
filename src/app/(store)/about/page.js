@@ -7,8 +7,8 @@ export default function AboutPage() {
     <div>
       <PageBanner
         accent="about"
-        title="About us"
-        subtitle="Our story, values, and how we serve you."
+        title="About RA Trading"
+        subtitle="Delhi-based wholesale supplier of shampoo, conditioner, and personal-care products. We sell online and ship across India."
         crumbs={[{ label: "Home", href: "/" }, { label: "About" }]}
       />
       <AboutSection />

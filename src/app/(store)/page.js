@@ -11,6 +11,7 @@ import AboutSection from "@/components/AboutSection";
 import Reviews from "@/components/Reviews";
 import FAQ from "@/components/FAQ";
 import { getContactSection } from "@/lib/staticData";
+import BusinessSummary from "@/components/store/BusinessSummary";
 
 // ISR: Revalidate homepage every 60 seconds
 export const revalidate = 60;
@@ -19,7 +20,9 @@ export const revalidate = 60;
 export async function generateMetadata() {
   const contact = await getContactSection();
   const siteName = contact.siteName;
-  const description = contact.description || `Shop at ${siteName}. Quality products, secure payments, and fast delivery.`;
+  const description =
+    contact.description ||
+    `${siteName} is a Delhi-based wholesale supplier of shampoo, conditioner, and personal-care products. Buy online with secure payments and pan-India shipping.`;
 
   return {
     title: `${siteName} - Quality Products at Best Prices`,
@@ -36,6 +39,7 @@ export default function Home() {
   return (
     <div>
       <Sections section="landingpage-frontsection"/>
+      <BusinessSummary />
       <HomeGraphics />
       <Category/>
       <HomeBrands />

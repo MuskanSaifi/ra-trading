@@ -11,7 +11,9 @@ export async function generateMetadata() {
   const contact = await getContactSection();
 
   const siteName = contact?.siteName || "Store";
-  const description = contact?.description || "";
+  const description =
+    contact?.description ||
+    "RA Trading is a Delhi-based wholesale supplier of shampoo, conditioner, and personal-care products, sold online with pan-India shipping.";
   const faviconUrl = contact?.favicon?.url;
 
   return {

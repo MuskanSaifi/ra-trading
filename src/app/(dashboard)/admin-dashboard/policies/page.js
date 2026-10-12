@@ -7,6 +7,8 @@ const POLICY_OPTIONS = [
   { slug: "privacy-policy", label: "Privacy Policy" },
   { slug: "terms-and-conditions", label: "Terms & Conditions" },
   { slug: "refund-and-return-policy", label: "Refund & Return Policy" },
+  { slug: "shipping-and-returns", label: "Shipping Policy" },
+  { slug: "cancellation-policy", label: "Cancellation Policy" },
 ];
 
 export default function AdminPoliciesPage() {

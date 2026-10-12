@@ -39,11 +39,13 @@ const SHOP_LINKS = [
 ];
 
 const COMPANY_LINKS = [
-  { label: "Contact Us", href: "/contact" },
   { label: "About Us", href: "/about" },
-  { label: "Terms & Conditions", href: "/terms-and-conditions" },
+  { label: "Contact Us", href: "/contact" },
   { label: "Privacy Policy", href: "/privacy-policy" },
-  { label: "Post Your Requirement", href: "/contact" },
+  { label: "Terms & Conditions", href: "/terms-and-conditions" },
+  { label: "Refund & Return Policy", href: "/refund-and-return-policy" },
+  { label: "Shipping Policy", href: "/shipping-and-returns" },
+  { label: "Cancellation Policy", href: "/cancellation-policy" },
 ];
 
 function findInstagramLink(socialLinks) {

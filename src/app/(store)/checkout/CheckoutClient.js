@@ -614,6 +614,14 @@ export default function CheckoutClient() {
                 )}
               </div>
 
+              <p className="text-xs text-gray-500 leading-5">
+                By placing this order you agree to our{" "}
+                <a href="/terms-and-conditions" className="underline">Terms</a>,{" "}
+                <a href="/privacy-policy" className="underline">Privacy Policy</a>,{" "}
+                <a href="/refund-and-return-policy" className="underline">Refund &amp; Return Policy</a>, and{" "}
+                <a href="/cancellation-policy" className="underline">Cancellation Policy</a>.
+              </p>
+
               <button
                 type="button"
                 onClick={handlePlaceOrder}

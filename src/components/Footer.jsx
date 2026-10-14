@@ -213,6 +213,9 @@ export default function Footer() {
                 <h2 className="text-2xl font-bold text-white leading-tight tracking-tight">
                   {brandTitle}
                 </h2>
+                <p className="text-xs text-gray-300 mt-1">
+                  Legal name: RA Trading
+                </p>
                 <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em] mt-0.5">
                   {brandSubtitle}
                 </p>

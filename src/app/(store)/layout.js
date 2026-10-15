@@ -18,7 +18,7 @@ export async function generateMetadata() {
 
   return {
     title: {
-      default: siteName,
+      default: `${siteName} | Legal name RA Trading | Wholesale shampoo and conditioner supplier`,
       template: `%s | ${siteName}`,
     },
     description,
@@ -50,6 +50,9 @@ export default function RootLayout({ children }) {
           <Navbar />
         </header>
         <main className="main-container min-h-[50vh] bg-[var(--store-surface)]">
+          <p className="bg-[#6f1d1b] px-4 py-2 text-center text-xs leading-5 text-white sm:text-sm">
+            Legal name: RA Trading. Nature of business: wholesale supplier of shampoo, conditioner, and personal-care products, sold online and shipped across India.
+          </p>
           {children}
           <ViewCartFloatingButton />
           <ChatbotWidget />

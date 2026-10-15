@@ -25,10 +25,10 @@ export async function generateMetadata() {
     `${siteName} is a Delhi-based wholesale supplier of shampoo, conditioner, and personal-care products. Buy online with secure payments and pan-India shipping.`;
 
   return {
-    title: `${siteName} - Quality Products at Best Prices`,
+    title: `${siteName} | Legal name RA Trading | Wholesale shampoo and conditioner`,
     description,
     openGraph: {
-      title: `${siteName} - Quality Products at Best Prices`,
+      title: `${siteName} | Legal name RA Trading | Wholesale shampoo and conditioner`,
       description,
       type: "website",
     },
@@ -38,8 +38,8 @@ export async function generateMetadata() {
 export default function Home() {
   return (
     <div>
-      <Sections section="landingpage-frontsection"/>
       <BusinessSummary />
+      <Sections section="landingpage-frontsection"/>
       <HomeGraphics />
       <Category/>
       <HomeBrands />

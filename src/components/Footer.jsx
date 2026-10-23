@@ -115,7 +115,7 @@ export default function Footer() {
 
   const brandTitle =
     contact?.title?.trim() || contact?.companyName?.trim() || "Store";
-  const brandSubtitle = contact?.subtitle?.trim() || "Marketplace";
+  const brandSubtitle = contact?.subtitle?.trim() || "";
   const instagramLink = useMemo(
     () => findInstagramLink(contact?.socialLinks),
     [contact?.socialLinks]

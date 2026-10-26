@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const ORDER_STATUSES = [
+  "Payment Pending",
+  "Payment Failed",
   "Pending",
   "Confirmed",
   "Processing",
@@ -13,6 +15,7 @@ const ORDER_STATUSES = [
   "Delivered",
   "Completed",
   "Cancelled by Admin",
+  "Cancelled by User",
   "Return Requested",
   "Return Approved",
   "Return Rejected",
@@ -55,11 +58,15 @@ export default function AdminUserOrders() {
     }
 
     try {
-      await fetch("/api/admin/admin-orders/update-order-status", {
+      const res = await fetch("/api/admin/admin-orders/update-order-status", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, status: newStatus, cancelReason })
       });
+      const data = await res.json();
+      if (!data.success || data.message !== "Order updated successfully") {
+        alert(data.message || "Update failed");
+      }
 
       fetchOrders();
     } catch (error) {
@@ -190,7 +197,9 @@ export default function AdminUserOrders() {
                 ))}
               </select>
 
-              {!order.awb && !String(order.status || "").includes("Cancel") && (
+              {!order.awb &&
+                !String(order.status || "").includes("Cancel") &&
+                !(order.paymentMode === "PayU" && order.paymentStatus !== "Paid") && (
                 <>
                   {!order.shipmentId && (
                     <button

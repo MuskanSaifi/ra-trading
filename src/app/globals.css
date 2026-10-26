@@ -15,6 +15,21 @@
   --store-radius: 0.75rem;
 }
 
+/* Tailwind v4 preflight leaves buttons with the default arrow cursor */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label:has(> input[type="radio"]),
+  label:has(> input[type="checkbox"]),
+  select {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
 html {
   overflow-x: hidden;
   max-width: 100%;

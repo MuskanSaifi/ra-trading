@@ -16,6 +16,7 @@ const IntegrationSettingsSchema = new mongoose.Schema(
 
     razorpayEnabled: { type: Boolean, default: true },
     cashfreeEnabled: { type: Boolean, default: true },
+    payuEnabled: { type: Boolean, default: true },
     codEnabled: { type: Boolean, default: true },
   },
   { timestamps: true }

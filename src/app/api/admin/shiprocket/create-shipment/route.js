@@ -12,6 +12,7 @@ import {
   getIntegrationSettings,
   applyShiprocketEnvOverrides,
 } from "@/lib/getIntegrationSettings";
+import { recordStatus } from "@/lib/orderLifecycle";
 
 export const runtime = "nodejs";
 
@@ -73,6 +74,13 @@ export async function POST(req) {
       );
     }
 
+    if (order.paymentMode === "PayU" && order.paymentStatus !== "Paid") {
+      return NextResponse.json(
+        { success: false, message: "Cannot ship an unpaid online order" },
+        { status: 400 }
+      );
+    }
+
     if (String(order.status || "").includes("Cancel")) {
       return NextResponse.json(
         { success: false, message: "Cannot ship a cancelled order" },
@@ -120,12 +128,16 @@ export async function POST(req) {
       }
     }
 
-    order.shippedAt = new Date();
-    order.status = "Shipped";
-
-    const eta = new Date();
-    eta.setDate(eta.getDate() + 4);
-    order.expectedDelivery = eta;
+    if (order.awb) {
+      order.shippedAt = new Date();
+      recordStatus(
+        order,
+        "Shipped",
+        `Shipped via ${order.courierName || "courier"} · AWB ${order.awb}`
+      );
+    } else {
+      recordStatus(order, "Packed", "Shipment booked on Shiprocket, awaiting AWB");
+    }
 
     await order.save();
 
@@ -140,7 +152,7 @@ export async function POST(req) {
         priority: "high",
         relatedId: order._id,
         relatedType: "order",
-        actionUrl: "/user-dashboard/orders",
+        actionUrl: `/user-dashboard/orders/${order._id}`,
       });
     }
 

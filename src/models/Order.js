@@ -31,10 +31,24 @@ const orderSchema = new mongoose.Schema(
     razorpayPaymentId: { type: String },
     cashfreeOrderId: { type: String },
     cashfreePaymentId: { type: String },
+    payuTxnId: { type: String, index: true },
+    payuPaymentId: { type: String },
 
     status: { type: String, default: "Pending" },
+    statusHistory: [
+      {
+        status: String,
+        note: String,
+        at: { type: Date, default: Date.now },
+        _id: false,
+      },
+    ],
     cancelReason: String,
+    cancelledBy: String,
     expectedDelivery: Date,
+    deliveredAt: Date,
+    refundId: String,
+    refundError: String,
 
     shiprocketOrderId: { type: String },
     shipmentId: { type: String },

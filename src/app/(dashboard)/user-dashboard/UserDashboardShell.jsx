@@ -44,7 +44,7 @@ export default function UserDashboardShell({ children }) {
       <aside
         className={[
           "fixed top-0 left-0 z-50 flex h-full w-[min(17rem,86vw)] flex-col bg-white shadow-2xl transition-transform duration-200 ease-out",
-          "border-r border-slate-200 md:static md:z-0 md:w-64 md:max-w-none md:translate-x-0 md:shadow-md",
+          "border-r border-slate-200 md:sticky md:top-0 md:z-0 md:h-[calc(100vh-1px)] md:w-64 md:max-w-none md:translate-x-0 md:shadow-none",
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         ].join(" ")}
       >
@@ -61,7 +61,7 @@ export default function UserDashboardShell({ children }) {
           >
             <Menu className="h-5 w-5" strokeWidth={2} />
           </button>
-          <span className="text-sm font-bold text-slate-900">My account</span>
+          <span className="text-sm font-bold text-slate-900">Your account</span>
         </div>
         <main className="flex-1 overflow-auto">{children}</main>
       </div>

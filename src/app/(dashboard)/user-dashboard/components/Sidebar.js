@@ -1,26 +1,28 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  X,
-  LayoutDashboard,
-  ShoppingBag,
-  Heart,
-  User,
-  LogOut,
-} from "lucide-react";
+import { X, LayoutDashboard, ShoppingBag, Heart, User, Bell, LogOut, LifeBuoy } from "lucide-react";
 
 const links = [
-  { href: "/user-dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/user-dashboard/orders", label: "My Orders", icon: ShoppingBag },
+  { href: "/user-dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/user-dashboard/orders", label: "Your orders", icon: ShoppingBag },
   { href: "/user-dashboard/wishlist", label: "Wishlist", icon: Heart },
-  { href: "/user-dashboard/profile", label: "Profile", icon: User },
+  { href: "/user-dashboard/notifications", label: "Notifications", icon: Bell },
+  { href: "/user-dashboard/profile", label: "Profile & address", icon: User },
 ];
 
 export default function Sidebar({ onNavigate }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    try {
+      setUser(JSON.parse(localStorage.getItem("user") || "null"));
+    } catch {}
+  }, []);
 
   const handleNav = () => onNavigate?.();
 
@@ -28,7 +30,6 @@ export default function Sidebar({ onNavigate }) {
     try {
       const res = await fetch("/api/user/logout", { method: "POST" });
       const data = await res.json();
-
       if (data.success) {
         localStorage.clear();
         sessionStorage.clear();
@@ -40,14 +41,22 @@ export default function Sidebar({ onNavigate }) {
     }
   };
 
+  const initials = (user?.name || "U")
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-4">
+      <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-5">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--store-primary)] text-sm font-bold text-white">
+          {initials}
+        </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#ff9900]">
-            Account
-          </p>
-          <h2 className="truncate text-lg font-bold text-slate-900">Dashboard</h2>
+          <p className="truncate text-sm font-bold text-slate-900">{user?.name || "My account"}</p>
+          <p className="truncate text-xs text-slate-500">{user?.phone || user?.email || ""}</p>
         </div>
         <button
           type="button"
@@ -72,29 +81,35 @@ export default function Sidebar({ onNavigate }) {
               onClick={handleNav}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-[#fff4e6] text-[#b45309] ring-1 ring-[#ff9900]/30"
+                  ? "bg-[var(--store-primary)]/10 font-semibold text-[var(--store-primary)]"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              <Icon className="h-[18px] w-[18px] shrink-0 opacity-80" strokeWidth={2} />
+              <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
               {label}
             </Link>
           );
         })}
+        <Link
+          href="/contact"
+          onClick={handleNav}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+        >
+          <LifeBuoy className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+          Help & support
+        </Link>
       </nav>
 
       <div className="border-t border-slate-200 p-3">
         <button
           type="button"
           onClick={handleLogout}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+          className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-red-50 hover:text-red-700 hover:ring-red-200"
         >
           <LogOut className="h-4 w-4" strokeWidth={2} />
-          Logout
+          Sign out
         </button>
       </div>
-
-      <p className="px-4 pb-3 text-[11px] text-slate-400 md:hidden">Tap dim area to close.</p>
     </div>
   );
 }

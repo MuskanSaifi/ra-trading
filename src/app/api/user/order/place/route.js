@@ -4,7 +4,13 @@ import Order from "@/models/Order";
 import User from "@/models/User";
 import { notifyAdmin } from "@/lib/notificationHelper";
 import { notifyUser } from "@/lib/notificationHelper";
-import { getCashfreeOrder, getCashfreePayments } from "@/lib/cashfree";
+import { getIntegrationSettings } from "@/lib/getIntegrationSettings";
+import {
+  buildPayuPaymentForm,
+  getPublicOrigin,
+  isPayuConfigured,
+  newPayuTxnId,
+} from "@/lib/payu";
 import { validateCartItems, assertCodAllowedForCart } from "@/lib/orderPricing";
 import { checkDeliveryCoverage } from "@/lib/deliveryCoverage";
 
@@ -13,7 +19,7 @@ export async function POST(req) {
     await connectDB();
 
     const body = await req.json();
-    const { userId, address, items, paymentMode, cashfree } = body;
+    const { userId, address, items, paymentMode } = body;
 
     if (!userId || !items?.length) {
       return NextResponse.json(
@@ -48,7 +54,14 @@ export async function POST(req) {
     const shipping = verifiedSubtotal > 0 ? 99 : 0;
     const finalTotal = verifiedSubtotal + shipping;
 
-    const mode = paymentMode === "Cashfree" ? "Cashfree" : "COD";
+    const mode = paymentMode === "PayU" ? "PayU" : "COD";
+
+    if (["Online", "Razorpay", "Cashfree", "Easebuzz"].includes(paymentMode)) {
+      return NextResponse.json(
+        { success: false, message: "Please use PayU for online payment" },
+        { status: 400 }
+      );
+    }
 
     if (mode === "COD") {
       const cod = assertCodAllowedForCart(byId, normalized);
@@ -57,55 +70,25 @@ export async function POST(req) {
       }
     }
 
-    let paymentStatus = "Pending";
-    let cashfreeOrderId;
-    let cashfreePaymentId;
-
-    if (mode === "Cashfree") {
-      const orderId = cashfree?.orderId;
-      if (!orderId) {
+    let payuTxnId;
+    let payuPhone;
+    if (mode === "PayU") {
+      const settings = await getIntegrationSettings();
+      if (settings.payuEnabled === false || !isPayuConfigured()) {
         return NextResponse.json(
-          { success: false, message: "Cashfree payment details missing" },
+          { success: false, message: "Online payment is not available right now" },
+          { status: 503 }
+        );
+      }
+
+      payuPhone = String(address?.phone || user.phone || "").replace(/\D/g, "").slice(-10);
+      if (!/^\d{10}$/.test(payuPhone)) {
+        return NextResponse.json(
+          { success: false, message: "A valid 10-digit phone is required for online payment" },
           { status: 400 }
         );
       }
-
-      const cfOrder = await getCashfreeOrder(orderId);
-      if (String(cfOrder?.order_status || "").toUpperCase() !== "PAID") {
-        return NextResponse.json(
-          { success: false, message: "Payment not completed" },
-          { status: 400 }
-        );
-      }
-
-      const paidAmount = Number(cfOrder.order_amount);
-      if (Math.abs(paidAmount - finalTotal) > 0.5) {
-        return NextResponse.json(
-          { success: false, message: "Payment amount mismatch" },
-          { status: 400 }
-        );
-      }
-
-      let paymentId = cashfree?.paymentId || "";
-      try {
-        const payments = await getCashfreePayments(orderId);
-        const list = Array.isArray(payments) ? payments : payments?.payments || [];
-        const successPay = list.find(
-          (p) => String(p.payment_status || "").toUpperCase() === "SUCCESS"
-        );
-        paymentId = successPay?.cf_payment_id || paymentId;
-      } catch {
-        // Order is already PAID; payment id is optional
-      }
-
-      paymentStatus = "Paid";
-      cashfreeOrderId = orderId;
-      cashfreePaymentId = paymentId ? String(paymentId) : undefined;
-    } else if (paymentMode === "Online" || paymentMode === "Razorpay") {
-      return NextResponse.json(
-        { success: false, message: "Please use Cashfree for online payment" },
-        { status: 400 }
-      );
+      payuTxnId = newPayuTxnId();
     }
 
     const expectedDelivery = new Date();
@@ -153,12 +136,38 @@ export async function POST(req) {
       items: orderItems,
       totalAmount: finalTotal,
       paymentMode: mode,
-      paymentStatus,
-      cashfreeOrderId,
-      cashfreePaymentId,
-      status: "Pending",
+      paymentStatus: "Pending",
+      payuTxnId,
+      status: mode === "PayU" ? "Payment Pending" : "Pending",
+      statusHistory: [
+        mode === "PayU"
+          ? { status: "Payment Pending", note: "Waiting for online payment" }
+          : { status: "Pending", note: "Order placed (Cash on delivery)" },
+      ],
       expectedDelivery,
     });
+
+    // Online orders are confirmed (and notified) by the PayU callback
+    if (mode === "PayU") {
+      const callback = `${getPublicOrigin(req)}/api/payments/payu/callback`;
+      const firstname =
+        String(address?.name || user.name || "Customer")
+          .replace(/[^a-zA-Z0-9 ]/g, "")
+          .trim()
+          .slice(0, 60) || "Customer";
+      const payu = buildPayuPaymentForm({
+        txnid: payuTxnId,
+        amount: finalTotal,
+        productinfo: "RA Trading order",
+        firstname,
+        email: user.email || process.env.PAYU_FALLBACK_EMAIL || "orders@ratradingco.com",
+        phone: payuPhone,
+        surl: callback,
+        furl: callback,
+        udf: { udf1: String(userId), udf2: String(order._id) },
+      });
+      return NextResponse.json({ success: true, order, payu });
+    }
 
     await notifyAdmin({
       title: "New Order Received",

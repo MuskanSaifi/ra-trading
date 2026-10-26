@@ -304,15 +304,26 @@ export async function checkShiprocketServiceability({
   });
 }
 
+export async function cancelShiprocketOrder(shiprocketOrderId) {
+  if (!shiprocketOrderId) throw new Error("shiprocketOrderId is required");
+  const token = await getShiprocketToken();
+  return shiprocketFetch("/orders/cancel", {
+    method: "POST",
+    token,
+    body: { ids: [Number(shiprocketOrderId) || shiprocketOrderId] },
+  });
+}
+
 export function mapShiprocketStatus(srStatus = "") {
   const s = String(srStatus).toLowerCase();
+  // RTO ("return to origin") statuses also contain words like "delivered"
+  if (s.includes("rto")) return "Return Requested";
   if (s.includes("delivered")) return "Delivered";
   if (s.includes("out for delivery") || s.includes("out_for_delivery"))
     return "Out for Delivery";
   if (s.includes("shipped") || s.includes("in transit") || s.includes("picked"))
     return "Shipped";
   if (s.includes("cancel")) return "Cancelled by Admin";
-  if (s.includes("rto")) return "Return Requested";
   return null;
 }
 

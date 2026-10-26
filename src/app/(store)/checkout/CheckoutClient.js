@@ -5,23 +5,7 @@ import { useRouter } from "next/navigation";
 import countriesData from "@/lib/countries.json" assert { type: "json" };
 import Image from "next/image";
 
-function loadCashfreeScript() {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") {
-      resolve(false);
-      return;
-    }
-    if (window.Cashfree) {
-      resolve(true);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
+import { submitToPayu } from "@/lib/orderClient";
 
 export default function CheckoutClient() {
   const router = useRouter();
@@ -39,7 +23,7 @@ export default function CheckoutClient() {
   const [sameAsProfile, setSameAsProfile] = useState(true);
   const [deliveryCheck, setDeliveryCheck] = useState(null);
   const [payOptions, setPayOptions] = useState({
-    cashfreeEnabled: true,
+    payuEnabled: true,
     codEnabled: true,
   });
 
@@ -104,7 +88,7 @@ export default function CheckoutClient() {
     [cartItems, payOptions.codEnabled]
   );
 
-  const cashfreeAllowed = payOptions.cashfreeEnabled !== false;
+  const payuAllowed = payOptions.payuEnabled !== false;
 
   useEffect(() => {
     fetch("/api/store/payment-options")
@@ -112,7 +96,7 @@ export default function CheckoutClient() {
       .then((d) => {
         if (d?.success) {
           setPayOptions({
-            cashfreeEnabled: d.cashfreeEnabled !== false && d.razorpayEnabled !== false,
+            payuEnabled: d.payuEnabled !== false,
             codEnabled: d.codEnabled !== false,
           });
         }
@@ -121,13 +105,13 @@ export default function CheckoutClient() {
   }, []);
 
   useEffect(() => {
-    if (!codAllowed && paymentMode === "COD" && cashfreeAllowed) {
-      setPaymentMode("Cashfree");
+    if (!codAllowed && paymentMode === "COD" && payuAllowed) {
+      setPaymentMode("PayU");
     }
-    if (!cashfreeAllowed && paymentMode === "Cashfree" && codAllowed) {
+    if (!payuAllowed && paymentMode === "PayU" && codAllowed) {
       setPaymentMode("COD");
     }
-  }, [codAllowed, paymentMode, cashfreeAllowed]);
+  }, [codAllowed, paymentMode, payuAllowed]);
 
   const effectiveAddress = useMemo(() => {
     if (!user) return address;
@@ -200,7 +184,7 @@ export default function CheckoutClient() {
       quantity: i.quantity,
     }));
 
-  const placeOrderRequest = async (cashfree) => {
+  const placeOrderRequest = async () => {
     const res = await fetch("/api/user/order/place", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -209,8 +193,7 @@ export default function CheckoutClient() {
         address: effectiveAddress,
         items: orderLineItems(),
         totalAmount: total,
-        paymentMode: cashfree ? "Cashfree" : paymentMode,
-        ...(cashfree ? { cashfree } : {}),
+        paymentMode,
       }),
     });
     return res.json();
@@ -240,66 +223,22 @@ export default function CheckoutClient() {
     }
 
     if (paymentMode === "COD" && !codAllowed) {
-      return alert("COD is not available for items in your cart. Pay online with Cashfree.");
+      return alert("COD is not available for items in your cart. Please pay online.");
     }
 
-    if (paymentMode === "Cashfree") {
+    if (paymentMode === "PayU") {
       setLoading(true);
       try {
-        const co = await fetch("/api/payments/cashfree/create-order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user._id,
-            items: orderLineItems(),
-            customer: {
-              name: addr.name,
-              phone: addr.phone,
-              email: user.email || "",
-            },
-          }),
-        });
-        const jd = await co.json();
-        if (!jd.success) {
-          alert(jd.message || "Could not start payment");
+        const data = await placeOrderRequest();
+        if (!data.success || !data.payu) {
+          alert(data.message || "Could not start payment");
           setLoading(false);
           return;
         }
-
-        const scriptOk = await loadCashfreeScript();
-        if (!scriptOk || !window.Cashfree) {
-          alert("Could not load Cashfree checkout.");
-          setLoading(false);
-          return;
-        }
-
-        const cashfree = window.Cashfree({ mode: jd.mode || "sandbox" });
-        const result = await cashfree.checkout({
-          paymentSessionId: jd.paymentSessionId,
-          redirectTarget: "_modal",
-        });
-
-        if (result?.error) {
-          alert(result.error.message || "Payment cancelled");
-          setLoading(false);
-          return;
-        }
-
-        const data = await placeOrderRequest({ orderId: jd.orderId });
-        if (data.success) {
-          localStorage.removeItem("cart");
-          window.dispatchEvent(new CustomEvent("cartUpdated", { detail: 0 }));
-          alert("Order placed successfully!");
-          router.push("/user-dashboard/orders");
-        } else {
-          alert(
-            data.message ||
-              "Payment may have succeeded but the order was not saved. Contact support with your Cashfree order id."
-          );
-        }
+        // Cart is cleared on /payment-status after PayU confirms the payment
+        submitToPayu(data.payu);
       } catch {
         alert("Could not start payment.");
-      } finally {
         setLoading(false);
       }
       return;
@@ -307,7 +246,7 @@ export default function CheckoutClient() {
 
     setLoading(true);
     try {
-      const data = await placeOrderRequest(null);
+      const data = await placeOrderRequest();
       if (data.success) {
         localStorage.removeItem("cart");
         window.dispatchEvent(new CustomEvent("cartUpdated", { detail: 0 }));
@@ -530,8 +469,13 @@ export default function CheckoutClient() {
             )}
           </div>
 
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Order Summary</h2>
+          <div className="md:sticky md:top-28 md:self-start">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-semibold">Order Summary</h2>
+              <a href="/cart" className="text-sm font-medium text-[var(--store-primary)] hover:underline">
+                Edit cart
+              </a>
+            </div>
 
             <div className="space-y-3">
               {cartItems.map((i) => (
@@ -585,29 +529,51 @@ export default function CheckoutClient() {
               </div>
 
               <div className="mt-4 space-y-2">
-                <label className="block text-sm font-semibold text-gray-800">
-                  Payment method
-                </label>
-                <select
-                  value={paymentMode}
-                  onChange={(e) => setPaymentMode(e.target.value)}
-                  className="w-full border p-3 rounded-lg"
-                >
-                  {codAllowed && (
-                    <option value="COD">Cash on Delivery</option>
-                  )}
-                  {cashfreeAllowed && (
-                    <option value="Cashfree">
-                      Cashfree (Card / UPI / Netbanking)
-                    </option>
-                  )}
-                </select>
-                {!codAllowed && cashfreeAllowed && (
+                <p className="text-sm font-semibold text-gray-800">Payment method</p>
+                <div className="space-y-2">
+                  {[
+                    payuAllowed && {
+                      value: "PayU",
+                      title: "Pay online",
+                      desc: "UPI, debit/credit card, or netbanking via PayU",
+                    },
+                    codAllowed && {
+                      value: "COD",
+                      title: "Cash on delivery",
+                      desc: "Pay when the order is delivered",
+                    },
+                  ]
+                    .filter(Boolean)
+                    .map((opt) => (
+                      <label
+                        key={opt.value}
+                        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+                          paymentMode === opt.value
+                            ? "border-[var(--store-primary)] bg-[var(--store-primary)]/5 ring-1 ring-[var(--store-primary)]"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMode"
+                          value={opt.value}
+                          checked={paymentMode === opt.value}
+                          onChange={() => setPaymentMode(opt.value)}
+                          className="mt-1 accent-[var(--store-primary)]"
+                        />
+                        <span>
+                          <span className="block text-sm font-semibold text-gray-900">{opt.title}</span>
+                          <span className="block text-xs text-gray-500">{opt.desc}</span>
+                        </span>
+                      </label>
+                    ))}
+                </div>
+                {!codAllowed && payuAllowed && (
                   <p className="text-xs text-amber-800">
                     COD is disabled because at least one product is online-payment only.
                   </p>
                 )}
-                {!cashfreeAllowed && !codAllowed && (
+                {!payuAllowed && !codAllowed && (
                   <p className="text-xs text-red-700">
                     No payment methods available. Contact support.
                   </p>
@@ -625,16 +591,16 @@ export default function CheckoutClient() {
               <button
                 type="button"
                 onClick={handlePlaceOrder}
-                disabled={loading}
-                className="w-full mt-4 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition disabled:opacity-60"
+                disabled={loading || !cartItems.length}
+                className="w-full mt-4 rounded-xl bg-[var(--store-primary)] py-3.5 text-base font-bold text-white shadow-md transition hover:bg-[var(--store-primary-dark)] disabled:opacity-60"
               >
                 {loading
-                  ? paymentMode === "Cashfree"
+                  ? paymentMode === "PayU"
                     ? "Opening payment…"
-                    : "Placing Order..."
-                  : paymentMode === "Cashfree"
-                    ? "Pay with Cashfree"
-                    : "Place Order"}
+                    : "Placing order..."
+                  : paymentMode === "PayU"
+                    ? `Pay ₹${total.toLocaleString("en-IN")}`
+                    : `Place order · ₹${total.toLocaleString("en-IN")}`}
               </button>
             </div>
           </div>

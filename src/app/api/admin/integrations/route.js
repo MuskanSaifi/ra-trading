@@ -3,7 +3,7 @@ import {
   getIntegrationSettings,
   applyShiprocketEnvOverrides,
 } from "@/lib/getIntegrationSettings";
-import { getCashfreeClientIdPreview, getCashfreeEnv, isCashfreeConfigured } from "@/lib/cashfree";
+import { getPayuEnv, getPayuKeyPreview, isPayuConfigured } from "@/lib/payu";
 import {
   isShiprocketConfigured,
   getShiprocketToken,
@@ -27,19 +27,15 @@ export async function GET() {
       }
     }
 
-    const cashfreeConfigured = isCashfreeConfigured();
-    const cashfreeEnabled =
-      settings.cashfreeEnabled !== false && settings.razorpayEnabled !== false;
-
     return NextResponse.json({
       success: true,
       settings,
       status: {
-        cashfree: {
-          configured: cashfreeConfigured,
-          enabled: cashfreeEnabled,
-          env: getCashfreeEnv(),
-          keyIdPreview: getCashfreeClientIdPreview(),
+        payu: {
+          configured: isPayuConfigured(),
+          enabled: settings.payuEnabled !== false,
+          env: getPayuEnv(),
+          keyIdPreview: getPayuKeyPreview(),
         },
         shiprocket: {
           configured: isShiprocketConfigured(),
@@ -79,6 +75,7 @@ export async function PUT(req) {
       "shiprocketEnabled",
       "razorpayEnabled",
       "cashfreeEnabled",
+      "payuEnabled",
       "codEnabled",
     ];
 

@@ -4,6 +4,8 @@ import Order from "@/models/Order";
 import { mapShiprocketStatus } from "@/lib/shiprocket";
 import { notifyUser } from "@/lib/notificationHelper";
 import mongoose from "mongoose";
+import { recordStatus } from "@/lib/orderLifecycle";
+import { isCancelled, statusLabel, trackingStepIndex } from "@/lib/orderStatus";
 
 export const runtime = "nodejs";
 
@@ -68,27 +70,29 @@ export async function POST(req) {
     }
 
     const mapped = mapShiprocketStatus(currentStatus);
-    if (mapped && order.status !== mapped) {
-      order.status = mapped;
-      if (mapped === "Shipped" || mapped === "Out for Delivery") {
-        const d = new Date();
-        d.setDate(d.getDate() + (mapped === "Out for Delivery" ? 1 : 4));
-        order.expectedDelivery = d;
-      }
-      if (mapped === "Delivered" && order.paymentMode === "COD") {
-        order.paymentStatus = "Paid";
-      }
+    const currentStep = trackingStepIndex(order.status);
+    const nextStep = trackingStepIndex(mapped);
+    // Courier events can arrive out of order; never move an order backwards
+    const isForward = nextStep === -1 || currentStep === -1 || nextStep > currentStep;
+
+    if (mapped && order.status !== mapped && isForward && !isCancelled(order.status)) {
+      const location = payload?.scans?.[0]?.location || payload?.current_location || "";
+      recordStatus(
+        order,
+        mapped,
+        [currentStatus, location].filter(Boolean).join(" · ") || "Courier update"
+      );
       await order.save();
 
       await notifyUser({
         userId: order.userId,
         title: "Shipment Update",
-        message: `Order #${order._id}: ${mapped}${awb ? ` (AWB ${awb})` : ""}`,
+        message: `Order #${order._id}: ${statusLabel(mapped)}${awb ? ` (AWB ${awb})` : ""}`,
         type: "order",
         priority: "medium",
         relatedId: order._id,
         relatedType: "order",
-        actionUrl: "/user-dashboard/orders",
+        actionUrl: `/user-dashboard/orders/${order._id}`,
       });
     }
 

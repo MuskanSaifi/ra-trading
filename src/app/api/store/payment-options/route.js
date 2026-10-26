@@ -1,30 +1,24 @@
 import { NextResponse } from "next/server";
 import { getIntegrationSettings } from "@/lib/getIntegrationSettings";
-import { isCashfreeConfigured } from "@/lib/cashfree";
+import { isPayuConfigured } from "@/lib/payu";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  const configured = isPayuConfigured();
   try {
     const settings = await getIntegrationSettings();
-    const configured = isCashfreeConfigured();
-    const enabled =
-      settings.cashfreeEnabled !== false && settings.razorpayEnabled !== false;
-
     return NextResponse.json({
       success: true,
-      cashfreeEnabled: enabled && configured,
-      cashfreeConfigured: configured,
-      razorpayEnabled: enabled && configured,
+      payuEnabled: settings.payuEnabled !== false && configured,
+      payuConfigured: configured,
       codEnabled: settings.codEnabled !== false,
     });
   } catch {
-    const configured = isCashfreeConfigured();
     return NextResponse.json({
       success: true,
-      cashfreeEnabled: configured,
-      cashfreeConfigured: configured,
-      razorpayEnabled: configured,
+      payuEnabled: configured,
+      payuConfigured: configured,
       codEnabled: true,
     });
   }

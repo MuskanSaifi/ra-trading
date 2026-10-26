@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { FaTrash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, ShieldCheck, Truck, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import PageBanner from "@/components/store/PageBanner";
 import Image from "next/image";
 
@@ -67,6 +68,12 @@ export default function CartPage() {
     (total, item) => total + Number(item.price) * item.quantity,
     0
   );
+  // Matches the flat shipping charge applied at checkout
+  const shipping = subtotal > 0 ? 99 : 0;
+  const total = subtotal + shipping;
+  const itemCount = cartItems.reduce((acc, item) => acc + Number(item.quantity || 0), 0);
+  const formatInr = (n) =>
+    `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
   const handleCheckout = () => {
     const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -78,7 +85,7 @@ export default function CartPage() {
   };
 
   return (
-    <div className="pb-28">
+    <div className="pb-28 lg:pb-10">
       <PageBanner
         accent="cart"
         title="Shopping cart"
@@ -102,8 +109,8 @@ export default function CartPage() {
             </button>
           </div>
         ) : (
-          <>
-            <div className="space-y-4 max-w-3xl">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+            <div className="space-y-4">
               {cartItems.map((item) => (
                 <div
                   key={item._id}
@@ -168,20 +175,66 @@ export default function CartPage() {
               ))}
             </div>
 
-            <div className="fixed bottom-0 left-0 right-0 bg-[var(--store-ink)] text-white shadow-2xl p-5 flex flex-wrap justify-between items-center gap-4 z-40 border-t-4 border-[var(--store-primary)]">
-              <div className="text-lg font-bold">
-                Subtotal:{" "}
-                <span className="text-[var(--store-primary)]">₹{subtotal.toLocaleString()}</span>
+            <aside className="rounded-2xl border border-[var(--store-border)] bg-white p-6 shadow-sm lg:sticky lg:top-28">
+              <h2 className="text-lg font-bold text-[var(--store-ink)]">Order summary</h2>
+              <dl className="mt-4 space-y-3 text-sm text-gray-700">
+                <div className="flex justify-between">
+                  <dt>Items ({itemCount})</dt>
+                  <dd className="font-semibold">{formatInr(subtotal)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt>Shipping</dt>
+                  <dd className="font-semibold">{formatInr(shipping)}</dd>
+                </div>
+                <div className="flex justify-between border-t border-[var(--store-border)] pt-3 text-base">
+                  <dt className="font-bold text-[var(--store-ink)]">Total</dt>
+                  <dd className="font-black text-[var(--store-primary)]">{formatInr(total)}</dd>
+                </div>
+              </dl>
+
+              <button
+                type="button"
+                onClick={handleCheckout}
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--store-primary)] py-3.5 text-base font-bold text-white shadow-md transition hover:bg-[var(--store-primary-dark)]"
+              >
+                Proceed to checkout
+                <ArrowRight size={18} />
+              </button>
+              <Link
+                href="/shop"
+                className="mt-3 block text-center text-sm font-medium text-[var(--store-primary)] hover:underline"
+              >
+                Continue shopping
+              </Link>
+
+              <div className="mt-6 space-y-2 border-t border-[var(--store-border)] pt-4 text-xs text-gray-600">
+                <p className="flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-green-700" />
+                  Secure payment with PayU or cash on delivery
+                </p>
+                <p className="flex items-center gap-2">
+                  <Truck size={16} className="text-[var(--store-primary)]" />
+                  Shipping across India
+                </p>
+              </div>
+            </aside>
+
+            {/* Mobile: keep the total and checkout button in reach while scrolling */}
+            <div className="fixed inset-x-0 bottom-0 z-[80] flex items-center justify-between gap-4 border-t border-[var(--store-border)] bg-white px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] lg:hidden">
+              <div>
+                <p className="text-xs text-gray-500">Total ({itemCount} items)</p>
+                <p className="text-lg font-black text-[var(--store-ink)]">{formatInr(total)}</p>
               </div>
               <button
                 type="button"
                 onClick={handleCheckout}
-                className="bg-[var(--store-primary)] text-white px-8 py-3 rounded-full font-black hover:bg-[var(--store-primary-dark)]"
+                className="flex items-center gap-2 rounded-xl bg-[var(--store-primary)] px-6 py-3 font-bold text-white"
               >
-                Checkout →
+                Checkout
+                <ArrowRight size={18} />
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

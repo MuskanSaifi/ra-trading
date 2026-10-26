@@ -9,7 +9,7 @@ import {
 
 const items = [
   { icon: Truck, title: "Fast dispatch", desc: "Made for smooth restocking flows" },
-  { icon: ShieldCheck, title: "Secure payments", desc: "Cashfree & encrypted checkout" },
+  { icon: ShieldCheck, title: "Secure payments", desc: "PayU & encrypted checkout" },
   { icon: Headphones, title: "Support team", desc: "Helpful assistance when you need it" },
   { icon: RotateCcw, title: "Easy returns", desc: "Hassle-free policy" },
   { icon: CreditCard, title: "Flexible pay", desc: "COD & online options" },

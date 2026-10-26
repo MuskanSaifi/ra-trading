@@ -8,7 +8,7 @@ export default function AboutPage() {
       <PageBanner
         accent="about"
         title="About RA Trading"
-        subtitle="Legal name: RA Trading. Delhi-based wholesale supplier of shampoo, conditioner, and personal-care products. Sold online and shipped across India."
+        subtitle="Delhi-based wholesale supplier of shampoo, conditioner, and personal-care products."
         crumbs={[{ label: "Home", href: "/" }, { label: "About" }]}
       />
       <AboutSection />

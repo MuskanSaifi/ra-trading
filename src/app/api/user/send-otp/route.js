@@ -4,8 +4,8 @@ import User from "@/models/User";
 import { connectDB } from "@/lib/dbConnect";
 import { sanitizeInput } from "@/lib/apiHelpers";
 
-const apiKey = "afd6c091-063e-11f0-8b17-0200cd936042";
-const otpTemplateName = "OTPtemplate";
+const apiKey = process.env.TWOFACTOR_API_KEY;
+const otpTemplateName = process.env.TWOFACTOR_OTP_TEMPLATE || "OTPtemplate";
 
 export async function POST(req) {
   try {
@@ -72,6 +72,12 @@ export async function POST(req) {
 
     // ✅ Send SMS for real numbers
     if (phone !== "9999999999") {
+      if (!apiKey) {
+        return NextResponse.json(
+          { success: false, message: "OTP service is not configured" },
+          { status: 503 }
+        );
+      }
       const formattedMobile = phone.replace(/\D/g, "");
       const smsUrl = `https://2factor.in/API/V1/${apiKey}/SMS/${formattedMobile}/${otp}/${otpTemplateName}`;
       const smsRes = await fetch(smsUrl);

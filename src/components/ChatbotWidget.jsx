@@ -57,6 +57,17 @@ export default function ChatbotWidget() {
   const listRef = useRef(null);
   const exitIntentShown = useRef(false);
   const timeoutsRef = useRef([]);
+  const inPurchaseFlow =
+    pathname === "/cart" ||
+    pathname?.startsWith("/checkout") ||
+    pathname?.startsWith("/payment-status");
+  const inPurchaseFlowRef = useRef(inPurchaseFlow);
+  inPurchaseFlowRef.current = inPurchaseFlow;
+
+  // Keep the assistant out of the way of the cart total and checkout button
+  useEffect(() => {
+    if (inPurchaseFlow) setOpen(false);
+  }, [inPurchaseFlow]);
 
   const whatsappText = encodeURIComponent(
     `Hi RA Trading, I want wholesale pricing.\nName: ${lead.name || "-"}\nMobile: ${
@@ -66,9 +77,11 @@ export default function ChatbotWidget() {
   const whatsappLink = `https://wa.me/919716994211?text=${whatsappText}`;
 
   useEffect(() => {
-    const openTimer = window.setTimeout(() => setOpen(true), 5000);
+    const openTimer = window.setTimeout(() => {
+      if (!inPurchaseFlowRef.current) setOpen(true);
+    }, 5000);
     const onMouseOut = (e) => {
-      if (exitIntentShown.current) return;
+      if (exitIntentShown.current || inPurchaseFlowRef.current) return;
       if (e.clientY <= 0) {
         exitIntentShown.current = true;
         addBotMessage("Wait! Get best wholesale prices today. Share your number now 📞");
@@ -288,7 +301,11 @@ export default function ChatbotWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-4 md:right-6 z-[70]">
+    <div
+      className={`fixed right-4 md:right-6 z-[70] ${
+        pathname === "/cart" ? "bottom-24 lg:bottom-5" : "bottom-5"
+      }`}
+    >
       {open && (
         <div className="mb-3 w-[min(24rem,calc(100vw-1.5rem))] max-w-sm rounded-2xl border border-[var(--store-border)] bg-white shadow-2xl overflow-hidden transition-all duration-300">
           <div className="flex items-center justify-between bg-[var(--store-ink)] px-4 py-3 text-white">

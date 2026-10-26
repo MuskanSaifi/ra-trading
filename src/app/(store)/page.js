@@ -11,8 +11,6 @@ import AboutSection from "@/components/AboutSection";
 import Reviews from "@/components/Reviews";
 import FAQ from "@/components/FAQ";
 import { getContactSection } from "@/lib/staticData";
-import BusinessSummary from "@/components/store/BusinessSummary";
-
 // ISR: Revalidate homepage every 60 seconds
 export const revalidate = 60;
 
@@ -25,10 +23,10 @@ export async function generateMetadata() {
     `${siteName} is a Delhi-based wholesale supplier of shampoo, conditioner, and personal-care products. Buy online with secure payments and pan-India shipping.`;
 
   return {
-    title: `${siteName} | Legal name RA Trading | Wholesale shampoo and conditioner`,
+    title: `${siteName} - Quality Products at Best Prices`,
     description,
     openGraph: {
-      title: `${siteName} | Legal name RA Trading | Wholesale shampoo and conditioner`,
+      title: `${siteName} - Quality Products at Best Prices`,
       description,
       type: "website",
     },
@@ -38,7 +36,6 @@ export async function generateMetadata() {
 export default function Home() {
   return (
     <div>
-      <BusinessSummary />
       <Sections section="landingpage-frontsection"/>
       <HomeGraphics />
       <Category/>

@@ -2,7 +2,20 @@ import { connectDB } from "@/lib/dbConnect";
 import Order from "@/models/Order";
 import { NextResponse } from "next/server";
 import { notifyUser } from "@/lib/notificationHelper";
-import User from "@/models/User";
+import { cancelOrder, recordStatus } from "@/lib/orderLifecycle";
+import { isCancelled } from "@/lib/orderStatus";
+
+const CUSTOMER_MESSAGES = {
+  Confirmed: "has been confirmed and is being prepared.",
+  Processing: "is being prepared.",
+  Packed: "has been packed and will ship soon.",
+  "Out for Delivery": "is out for delivery today.",
+  Delivered: "has been delivered. Thank you for shopping with us!",
+  Completed: "has been delivered. Thank you for shopping with us!",
+  "Return Approved": "return request has been approved.",
+  "Return Rejected": "return request was not approved.",
+  "Refund Completed": "refund has been completed.",
+};
 
 export async function PUT(req) {
   try {
@@ -18,75 +31,57 @@ export async function PUT(req) {
 
     const order = await Order.findById(orderId);
     if (!order) {
-      return NextResponse.json(
-        { success: false, message: "Order not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: "Order not found" }, { status: 404 });
     }
 
-    // ❗ NOW ADMIN CAN CHANGE ANYTHING (NO STATUS BLOCK)
-    order.status = status;
+    if (order.status === status) {
+      return NextResponse.json({ success: true, message: "Status unchanged" });
+    }
 
-    // ⭐ If admin cancels → reason required
+    let message;
+    let notes = [];
+
     if (status === "Cancelled by Admin") {
-      order.cancelReason = cancelReason || "No reason provided";
-      order.paymentStatus = "Refund Initiated";
-    }
-
-    // ⭐ If moving from cancel to active, clear cancelReason
-    if (!status.includes("Cancelled")) {
-      order.cancelReason = "";
-    }
-
-    // ⭐ ETA Auto logic still valid
-    if (status === "Shipped") {
-      const d = new Date();
-      d.setDate(d.getDate() + 4);
-      order.expectedDelivery = d;
-    }
-
-    if (status === "Out for Delivery") {
-      const d = new Date();
-      d.setDate(d.getDate() + 1);
-      order.expectedDelivery = d;
-    }
-
-    // ⭐ Completed means payment done
-    if (status === "Completed") {
-      order.paymentStatus = "Paid";
-    }
-
-    await order.save();
-
-    // ✅ Auto notification to user when status changes
-    const user = await User.findById(order.userId);
-    if (user) {
-      let message = `Your order #${orderId} status has been updated to: ${status}`;
-      if (status === "Shipped") {
-        message = `Your order #${orderId} has been shipped! Expected delivery: ${order.expectedDelivery?.toLocaleDateString()}`;
-      } else if (status === "Completed") {
-        message = `Your order #${orderId} has been delivered successfully!`;
-      } else if (status === "Cancelled by Admin") {
-        message = `Your order #${orderId} has been cancelled. Reason: ${cancelReason || "Not provided"}`;
+      if (isCancelled(order.status)) {
+        return NextResponse.json(
+          { success: false, message: "Order is already cancelled" },
+          { status: 400 }
+        );
       }
+      const result = await cancelOrder(order, { by: "admin", reason: cancelReason });
+      notes = result.notes;
+      message = `Your order #${order._id} has been cancelled. Reason: ${order.cancelReason}.${
+        result.refund.ok ? " A refund has been initiated to your original payment method." : ""
+      }`;
+    } else {
+      if (!isCancelled(status)) order.cancelReason = "";
+      if (status === "Refund Completed") order.paymentStatus = "Refund Completed";
+      recordStatus(order, status, "Updated by admin");
+      await order.save();
 
-      await notifyUser({
-        userId: user._id,
-        title: "Order Status Updated",
-        message,
-        type: "order",
-        priority: status.includes("Cancelled") ? "high" : "medium",
-        relatedId: orderId,
-        relatedType: "order",
-        actionUrl: `/user-dashboard/orders`,
-      });
+      if (status === "Shipped") {
+        message = `Your order #${order._id} has been shipped. Expected delivery: ${order.expectedDelivery?.toLocaleDateString("en-IN")}`;
+      } else {
+        message = `Your order #${order._id} ${CUSTOMER_MESSAGES[status] || `status is now: ${status}`}`;
+      }
     }
 
-    return NextResponse.json({ success: true, message: "Order updated successfully" });
+    await notifyUser({
+      userId: order.userId,
+      title: "Order Update",
+      message,
+      type: "order",
+      priority: isCancelled(status) ? "high" : "medium",
+      relatedId: order._id,
+      relatedType: "order",
+      actionUrl: `/user-dashboard/orders/${order._id}`,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: notes.length ? `Order updated. ${notes.join(". ")}` : "Order updated successfully",
+    });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 
 const ORDER_STATUSES = [
+  "Payment Pending",
+  "Payment Failed",
   "Pending",
   "Confirmed",
   "Processing",
@@ -14,6 +16,7 @@ const ORDER_STATUSES = [
   "Delivered",
   "Completed",
   "Cancelled by Admin",
+  "Cancelled by User",
   "Return Requested",
   "Return Approved",
   "Return Rejected",
@@ -51,13 +54,25 @@ export default function OrderDetailsPage() {
       cancelReason = prompt("Cancellation reason:") || "";
       if (!cancelReason.trim()) return alert("Reason required");
     }
+    if (
+      newStatus === "Cancelled by Admin" &&
+      order.paymentMode === "PayU" &&
+      order.paymentStatus === "Paid" &&
+      !confirm("This order was paid online. Cancelling will also send a PayU refund. Continue?")
+    ) {
+      return;
+    }
     setBusy("status");
     try {
-      await fetch("/api/admin/admin-orders/update-order-status", {
+      const res = await fetch("/api/admin/admin-orders/update-order-status", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId: id, status: newStatus, cancelReason }),
       });
+      const data = await res.json();
+      if (!data.success || data.message !== "Order updated successfully") {
+        alert(data.message || "Update failed");
+      }
       await fetchOrder();
     } finally {
       setBusy("");
@@ -132,12 +147,12 @@ export default function OrderDetailsPage() {
     }
   };
 
-  const refundCashfree = async () => {
-    if (!confirm("Process Cashfree refund for this order?")) return;
+  const refundPayu = async () => {
+    if (!confirm("Process PayU refund for this order?")) return;
     const reason = prompt("Refund reason:") || "Admin refund";
     setBusy("refund");
     try {
-      const res = await fetch("/api/admin/payments/cashfree/refund", {
+      const res = await fetch("/api/admin/payments/payu/refund", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId: id, reason }),
@@ -161,7 +176,9 @@ export default function OrderDetailsPage() {
         })
       : "N/A";
 
-  const cancelled = String(order.status || "").includes("Cancel");
+  const cancelled =
+    String(order.status || "").includes("Cancel") ||
+    (order.paymentMode === "PayU" && order.paymentStatus !== "Paid");
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6 text-gray-900">
@@ -200,7 +217,7 @@ export default function OrderDetailsPage() {
       </div>
 
       <div className="space-y-3 rounded-xl border bg-white p-4 shadow-sm">
-        <h3 className="text-lg font-semibold">Payment (Cashfree / COD)</h3>
+        <h3 className="text-lg font-semibold">Payment (PayU / COD)</h3>
         <p>
           <strong>Mode:</strong> {order.paymentMode || "COD"}
         </p>
@@ -217,26 +234,35 @@ export default function OrderDetailsPage() {
             {order.paymentStatus || "Pending"}
           </span>
         </p>
-        {order.cashfreeOrderId && (
+        {order.payuTxnId && (
           <p className="text-sm">
-            <strong>Cashfree Order:</strong> {order.cashfreeOrderId}
+            <strong>PayU Txn ID:</strong> {order.payuTxnId}
           </p>
         )}
-        {order.cashfreePaymentId && (
+        {order.payuPaymentId && (
           <p className="text-sm">
-            <strong>Payment ID:</strong> {order.cashfreePaymentId}
+            <strong>PayU Payment ID (mihpayid):</strong> {order.payuPaymentId}
           </p>
         )}
-        {order.paymentMode === "Cashfree" &&
-          order.cashfreeOrderId &&
-          order.paymentStatus !== "Refund Completed" && (
+        {order.refundError && order.paymentStatus === "Refund Pending" && (
+          <p className="rounded bg-red-50 p-2 text-sm text-red-700">
+            Refund did not go through: {order.refundError}
+          </p>
+        )}
+        {order.paymentMode === "PayU" &&
+          order.payuPaymentId &&
+          ["Paid", "Refund Pending"].includes(order.paymentStatus) && (
             <button
               type="button"
               disabled={busy === "refund"}
-              onClick={refundCashfree}
+              onClick={refundPayu}
               className="rounded bg-red-600 px-3 py-1.5 text-sm text-white disabled:opacity-60"
             >
-              {busy === "refund" ? "Refunding..." : "Refund via Cashfree"}
+              {busy === "refund"
+                ? "Refunding..."
+                : order.paymentStatus === "Refund Pending"
+                  ? "Retry PayU refund"
+                  : "Refund via PayU"}
             </button>
           )}
       </div>
@@ -359,6 +385,23 @@ export default function OrderDetailsPage() {
           <strong>Expected Delivery:</strong> {formatDate(order.expectedDelivery)}
         </p>
       </div>
+
+      {order.statusHistory?.length > 0 && (
+        <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <h3 className="mb-3 text-lg font-semibold">Status history</h3>
+          <ol className="space-y-2 text-sm">
+            {[...order.statusHistory].reverse().map((h, i) => (
+              <li key={i} className="flex gap-3">
+                <span className="w-40 shrink-0 text-gray-500">{formatDate(h.at)}</span>
+                <span>
+                  <strong>{h.status}</strong>
+                  {h.note ? <span className="text-gray-600"> — {h.note}</span> : null}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       <div>
         <h3 className="mb-3 text-xl font-semibold">Items</h3>

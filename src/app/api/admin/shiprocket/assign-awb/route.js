@@ -7,6 +7,8 @@ import {
   assignShiprocketAwb,
   isShiprocketConfigured,
 } from "@/lib/shiprocket";
+import { recordStatus } from "@/lib/orderLifecycle";
+import { CANCELLABLE_STATUSES } from "@/lib/orderStatus";
 
 export const runtime = "nodejs";
 
@@ -40,6 +42,13 @@ export async function POST(req) {
       );
     }
 
+    if (order.paymentMode === "PayU" && order.paymentStatus !== "Paid") {
+      return NextResponse.json(
+        { success: false, message: "Cannot assign AWB to an unpaid online order" },
+        { status: 400 }
+      );
+    }
+
     if (String(order.status || "").includes("Cancel")) {
       return NextResponse.json(
         { success: false, message: "Cannot assign AWB to cancelled order" },
@@ -54,8 +63,8 @@ export async function POST(req) {
       order.courierName = manualCourier || order.courierName || "Manual";
       order.trackingUrl = `https://shiprocket.co/tracking/${awb}`;
       if (!order.shippedAt) order.shippedAt = new Date();
-      if (order.status === "Pending" || order.status === "Confirmed" || order.status === "Processing" || order.status === "Packed") {
-        order.status = "Shipped";
+      if (CANCELLABLE_STATUSES.includes(order.status)) {
+        recordStatus(order, "Shipped", `Shipped via ${order.courierName} · AWB ${awb}`);
       }
       await order.save();
 
@@ -113,11 +122,11 @@ export async function POST(req) {
     order.trackingUrl = assigned.trackingUrl;
     order.labelUrl = assigned.labelUrl || order.labelUrl;
     if (!order.shippedAt) order.shippedAt = new Date();
-    order.status = "Shipped";
-
-    const eta = new Date();
-    eta.setDate(eta.getDate() + 4);
-    order.expectedDelivery = eta;
+    recordStatus(
+      order,
+      "Shipped",
+      `Shipped via ${order.courierName || "courier"} · AWB ${order.awb}`
+    );
 
     await order.save();
 

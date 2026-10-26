@@ -20,7 +20,7 @@ export default function IntegrationsPage() {
     shiprocketDefaultWeight: 0.5,
     shiprocketDefaultHsn: 3305,
     shiprocketEnabled: true,
-    cashfreeEnabled: true,
+    payuEnabled: true,
     codEnabled: true,
   });
 
@@ -99,7 +99,7 @@ export default function IntegrationsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Integrations</h1>
           <p className="text-sm text-slate-600">
-            Manage Cashfree + Shiprocket from admin. API keys stay in{" "}
+            Manage PayU + Shiprocket from admin. API keys stay in{" "}
             <code className="rounded bg-slate-100 px-1">.env</code>.
           </p>
         </div>
@@ -123,28 +123,28 @@ export default function IntegrationsPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border bg-white p-4 shadow-sm">
           <div className="mb-2 flex items-center gap-2">
-            {status?.cashfree?.configured ? (
+            {status?.payu?.configured ? (
               <CheckCircle2 className="h-5 w-5 text-green-600" />
             ) : (
               <XCircle className="h-5 w-5 text-red-500" />
             )}
-            <h2 className="font-semibold">Cashfree</h2>
+            <h2 className="font-semibold">PayU</h2>
           </div>
           <p className="text-sm text-slate-600">
             Keys:{" "}
-            {status?.cashfree?.configured
-              ? `Configured (${status.cashfree.keyIdPreview || "****"}) · ${status.cashfree.env}`
-              : "Missing CASHFREE_CLIENT_ID / CASHFREE_CLIENT_SECRET in .env"}
+            {status?.payu?.configured
+              ? `Configured (${status.payu.keyIdPreview || "****"}) · ${status.payu.env}`
+              : "Missing PAYU_KEY / PAYU_SALT in .env"}
           </p>
           <label className="mt-3 flex items-center gap-2 text-sm">
             <input
               type="checkbox"
-              checked={form.cashfreeEnabled !== false}
+              checked={form.payuEnabled !== false}
               onChange={(e) =>
-                setForm((f) => ({ ...f, cashfreeEnabled: e.target.checked }))
+                setForm((f) => ({ ...f, payuEnabled: e.target.checked }))
               }
             />
-            Enable Cashfree at checkout
+            Enable PayU online payment at checkout
           </label>
           <label className="mt-2 flex items-center gap-2 text-sm">
             <input
@@ -339,8 +339,8 @@ export default function IntegrationsPage() {
         <p className="font-semibold">Credentials (.env only)</p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>
-            Cashfree: <code>CASHFREE_CLIENT_ID</code>,{" "}
-            <code>CASHFREE_CLIENT_SECRET</code>, <code>CASHFREE_ENV</code>
+            PayU: <code>PAYU_KEY</code>, <code>PAYU_SALT</code>,{" "}
+            <code>PAYU_ENV</code>
           </li>
           <li>
             Shiprocket API user: <code>SHIPROCKET_EMAIL</code>,{" "}

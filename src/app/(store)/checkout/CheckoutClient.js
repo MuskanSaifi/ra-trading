@@ -43,7 +43,7 @@ export default function CheckoutClient() {
     const c = JSON.parse(localStorage.getItem("cart") || "[]");
 
     if (!u) {
-      router.push(`/auth/login?redirect=/checkout`);
+      router.push(`/login?redirect=/checkout`);
       return;
     }
 

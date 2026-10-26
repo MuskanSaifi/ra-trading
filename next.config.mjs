@@ -25,6 +25,10 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  // Old links and bookmarks used /auth/login; the query string is kept
+  async redirects() {
+    return [{ source: "/auth/login", destination: "/login", permanent: true }];
+  },
   // Security headers (additional layer)
   async headers() {
     return [

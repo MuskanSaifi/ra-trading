@@ -1,11 +1,12 @@
-﻿import { NextResponse } from "next/server";
+import { requireAdminAuth } from "@/lib/authHelpers";
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import Order from "@/models/Order";
 import { trackShiprocketByAwb, isShiprocketConfigured } from "@/lib/shiprocket";
 
 export const runtime = "nodejs";
 
-export async function GET(req) {
+async function handleGET(req) {
   try {
     if (!isShiprocketConfigured()) {
       return NextResponse.json(
@@ -54,3 +55,5 @@ export async function GET(req) {
     );
   }
 }
+
+export const GET = requireAdminAuth(handleGET);

@@ -13,7 +13,8 @@ import {
   FaSearch,
 } from "react-icons/fa";
 import { MdPhone, MdEmail, MdLocationOn } from "react-icons/md";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LayoutDashboard, LogOut, Package, Heart, User } from "lucide-react";
+import { logoutUser } from "@/lib/logoutClient";
 
 function cartSubtotal() {
   try {
@@ -43,6 +44,30 @@ export default function Navbar() {
   const [searchCategory, setSearchCategory] = useState("all");
 
   const containerRef = useRef(null);
+  const accountRef = useRef(null);
+  const [accountOpen, setAccountOpen] = useState(false);
+
+  useEffect(() => {
+    if (!accountOpen) return;
+    const onDown = (e) => {
+      if (!accountRef.current?.contains(e.target)) setAccountOpen(false);
+    };
+    const onKey = (e) => e.key === "Escape" && setAccountOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [accountOpen]);
+
+  const handleLogout = async () => {
+    setAccountOpen(false);
+    setMobileMenu(false);
+    await logoutUser();
+    setUser(null);
+    router.push("/");
+  };
 
   const syncCounts = useCallback(() => {
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
@@ -294,24 +319,73 @@ export default function Navbar() {
           </Link>
 
           {user ? (
-            <Link href="/user-dashboard" className="hidden sm:flex items-center gap-2 hover:text-[var(--store-primary)] text-[var(--store-ink)]">
-              {user.profilePic ? (
-                <Image
-                  src={user.profilePic}
-                  alt={user.name || "User"}
-                  width={32}
-                  height={32}
-                  className="rounded-full object-cover border-2 border-[var(--store-primary)]"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-[var(--store-primary-soft)] flex items-center justify-center">
-                  <FaUser className="text-[var(--store-primary)] text-sm" />
+            <div ref={accountRef} className="relative hidden sm:block">
+              <button
+                type="button"
+                onClick={() => setAccountOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={accountOpen}
+                className="flex items-center gap-2 text-[var(--store-ink)] hover:text-[var(--store-primary)]"
+              >
+                {user.profilePic ? (
+                  <Image
+                    src={user.profilePic}
+                    alt={user.name || "User"}
+                    width={32}
+                    height={32}
+                    className="rounded-full object-cover border-2 border-[var(--store-primary)]"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-[var(--store-primary-soft)] flex items-center justify-center">
+                    <FaUser className="text-[var(--store-primary)] text-sm" />
+                  </div>
+                )}
+                <span className="flex flex-col items-start text-left leading-tight">
+                  <span className="text-[11px] text-gray-500">Hello, {user.name?.split(" ")[0] || "there"}</span>
+                  <span className="flex items-center gap-0.5 text-sm font-semibold">
+                    Account <ChevronDown className={`h-4 w-4 transition ${accountOpen ? "rotate-180" : ""}`} />
+                  </span>
+                </span>
+              </button>
+
+              {accountOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-50 mt-3 w-60 overflow-hidden rounded-2xl border border-[var(--store-border)] bg-white py-2 shadow-xl"
+                >
+                  <div className="border-b border-[var(--store-border)] px-4 pb-3 pt-1">
+                    <p className="truncate text-sm font-bold text-[var(--store-ink)]">{user.name || "My account"}</p>
+                    <p className="truncate text-xs text-gray-500">{user.phone || user.email}</p>
+                  </div>
+                  {[
+                    { href: "/user-dashboard", label: "Your account", icon: LayoutDashboard },
+                    { href: "/user-dashboard/orders", label: "Your orders", icon: Package },
+                    { href: "/user-dashboard/wishlist", label: "Wishlist", icon: Heart },
+                    { href: "/user-dashboard/profile", label: "Profile & address", icon: User },
+                  ].map(({ href, label, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      role="menuitem"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-[var(--store-surface)] hover:text-[var(--store-primary)]"
+                    >
+                      <Icon className="h-4 w-4" /> {label}
+                    </Link>
+                  ))}
+                  <div className="mt-1 border-t border-[var(--store-border)] pt-1">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" /> Sign out
+                    </button>
+                  </div>
                 </div>
               )}
-              <span className="text-sm font-semibold max-w-[100px] truncate">
-                {user.name?.split(" ")[0] || "Account"}
-              </span>
-            </Link>
+            </div>
           ) : (
             <Link href="/login" className="hidden sm:flex items-center gap-1 font-semibold text-[var(--store-ink)] hover:text-[var(--store-primary)]">
               <FaUser /> Login
@@ -414,9 +488,21 @@ export default function Navbar() {
               Wishlist ({wishCount})
             </Link>
             {user ? (
-              <Link href="/user-dashboard" onClick={() => setMobileMenu(false)}>
-                Account
-              </Link>
+              <>
+                <Link href="/user-dashboard" onClick={() => setMobileMenu(false)}>
+                  Your account
+                </Link>
+                <Link href="/user-dashboard/orders" onClick={() => setMobileMenu(false)}>
+                  Your orders
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-left font-semibold text-red-600"
+                >
+                  <LogOut className="h-4 w-4" /> Sign out
+                </button>
+              </>
             ) : (
               <Link href="/login" onClick={() => setMobileMenu(false)}>
                 Login

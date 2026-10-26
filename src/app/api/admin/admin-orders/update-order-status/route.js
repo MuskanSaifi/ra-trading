@@ -1,3 +1,4 @@
+import { requireAdminAuth } from "@/lib/authHelpers";
 import { connectDB } from "@/lib/dbConnect";
 import Order from "@/models/Order";
 import { NextResponse } from "next/server";
@@ -17,7 +18,7 @@ const CUSTOMER_MESSAGES = {
   "Refund Completed": "refund has been completed.",
 };
 
-export async function PUT(req) {
+async function handlePUT(req) {
   try {
     await connectDB();
     const { orderId, status, cancelReason } = await req.json();
@@ -85,3 +86,5 @@ export async function PUT(req) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+export const PUT = requireAdminAuth(handlePUT);

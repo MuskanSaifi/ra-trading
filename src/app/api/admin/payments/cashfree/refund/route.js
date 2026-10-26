@@ -1,3 +1,4 @@
+import { requireAdminAuth } from "@/lib/authHelpers";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import Order from "@/models/Order";
@@ -6,7 +7,7 @@ import { isCashfreeConfigured, refundCashfreePayment } from "@/lib/cashfree";
 
 export const runtime = "nodejs";
 
-export async function POST(req) {
+async function handlePOST(req) {
   try {
     await connectDB();
     const { orderId, amount, reason } = await req.json();
@@ -89,3 +90,5 @@ export async function POST(req) {
     );
   }
 }
+
+export const POST = requireAdminAuth(handlePOST);

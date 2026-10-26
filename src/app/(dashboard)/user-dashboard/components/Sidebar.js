@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { X, LayoutDashboard, ShoppingBag, Heart, User, Bell, LogOut, LifeBuoy } from "lucide-react";
+import { logoutUser } from "@/lib/logoutClient";
 
 const links = [
   { href: "/user-dashboard", label: "Overview", icon: LayoutDashboard },
@@ -27,18 +28,8 @@ export default function Sidebar({ onNavigate }) {
   const handleNav = () => onNavigate?.();
 
   const handleLogout = async () => {
-    try {
-      const res = await fetch("/api/user/logout", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        localStorage.clear();
-        sessionStorage.clear();
-        window.dispatchEvent(new Event("userAuthChanged"));
-        router.push("/login");
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+    await logoutUser();
+    router.push("/login");
   };
 
   const initials = (user?.name || "U")

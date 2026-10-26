@@ -48,7 +48,7 @@ export default function NotificationsScreen() {
       if (user?._id) {
         setUserId(user._id);
       } else {
-        router.push("/auth/login");
+        router.push("/login");
       }
     } catch (error) {
       console.log("Error loading user:", error);

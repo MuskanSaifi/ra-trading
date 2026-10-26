@@ -1,8 +1,9 @@
-﻿import { NextResponse } from "next/server";
+import { requireAdminAuth } from "@/lib/authHelpers";
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import Order from "@/models/Order";
 
-export async function GET(req) {
+async function handleGET(req) {
   try {
     await connectDB();
 
@@ -25,3 +26,5 @@ export async function GET(req) {
     return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
   }
 }
+
+export const GET = requireAdminAuth(handleGET);

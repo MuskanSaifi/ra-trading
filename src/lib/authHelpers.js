@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import AdminSetting from "@/models/AdminSetting";
+import { connectDB } from "@/lib/dbConnect";
 
 /**
  * Verify admin authentication token
@@ -32,7 +33,8 @@ export async function verifyAdminAuth(req) {
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Verify admin exists in database
+    // Verify admin exists in database (routes connect inside their handler, after this check)
+    await connectDB();
     const admin = await AdminSetting.findById(decoded.adminId);
     if (!admin) {
       return {

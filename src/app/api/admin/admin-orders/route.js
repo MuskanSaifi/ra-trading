@@ -1,9 +1,10 @@
-﻿import { NextResponse } from "next/server";
+import { requireAdminAuth } from "@/lib/authHelpers";
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import Order from "@/models/Order";
 
 // GET ALL ORDERS (with populated product)
-export async function GET(req) {
+async function handleGET(req) {
   try {
     await connectDB();
 
@@ -56,7 +57,7 @@ export async function GET(req) {
 }
 
 // UPDATE ORDER STATUS
-export async function PATCH(req) {
+async function handlePATCH(req) {
   try {
     await connectDB();
 
@@ -78,3 +79,5 @@ export async function PATCH(req) {
   }
 }
 
+export const GET = requireAdminAuth(handleGET);
+export const PATCH = requireAdminAuth(handlePATCH);

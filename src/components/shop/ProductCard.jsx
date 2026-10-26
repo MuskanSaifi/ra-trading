@@ -49,7 +49,7 @@ export default function ProductCard({ product }) {
     e.stopPropagation();
     const localUser = JSON.parse(localStorage.getItem("user"));
     if (!localUser?._id) {
-      window.location.href = `/auth/login?redirect=/${categorySlug}/${productSlug}`;
+      window.location.href = `/login?redirect=/${categorySlug}/${productSlug}`;
       return;
     }
 

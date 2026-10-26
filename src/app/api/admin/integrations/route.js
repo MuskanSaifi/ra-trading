@@ -1,4 +1,5 @@
-﻿import { NextResponse } from "next/server";
+import { requireAdminAuth } from "@/lib/authHelpers";
+import { NextResponse } from "next/server";
 import {
   getIntegrationSettings,
   applyShiprocketEnvOverrides,
@@ -11,7 +12,7 @@ import {
 
 export const runtime = "nodejs";
 
-export async function GET() {
+async function handleGET() {
   try {
     const settings = await getIntegrationSettings();
     applyShiprocketEnvOverrides(settings);
@@ -57,7 +58,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(req) {
+async function handlePUT(req) {
   try {
     const body = await req.json();
     const settings = await getIntegrationSettings();
@@ -94,3 +95,6 @@ export async function PUT(req) {
     );
   }
 }
+
+export const GET = requireAdminAuth(handleGET);
+export const PUT = requireAdminAuth(handlePUT);

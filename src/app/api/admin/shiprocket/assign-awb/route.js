@@ -1,4 +1,5 @@
-﻿import { NextResponse } from "next/server";
+import { requireAdminAuth } from "@/lib/authHelpers";
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import Order from "@/models/Order";
 import User from "@/models/User";
@@ -21,7 +22,7 @@ export const runtime = "nodejs";
  *  - courierId (optional)
  *  - awb (optional) — if provided, saves manual AWB without calling Shiprocket
  */
-export async function POST(req) {
+async function handlePOST(req) {
   try {
     await connectDB();
     const body = await req.json();
@@ -162,3 +163,5 @@ export async function POST(req) {
     );
   }
 }
+
+export const POST = requireAdminAuth(handlePOST);

@@ -56,7 +56,7 @@ const totalSaving = Number(((mrp - price) * qty).toFixed(2));
   const toggleWish = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user?._id) {
-      window.location.href = `/auth/login?redirect=/${product.category.slug}/${product.slug}`;
+      window.location.href = `/login?redirect=/${product.category.slug}/${product.slug}`;
       return;
     }
 

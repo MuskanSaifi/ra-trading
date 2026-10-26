@@ -3,26 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-
-const ORDER_STATUSES = [
-  "Payment Pending",
-  "Payment Failed",
-  "Pending",
-  "Confirmed",
-  "Processing",
-  "Packed",
-  "Shipped",
-  "Out for Delivery",
-  "Delivered",
-  "Completed",
-  "Cancelled by Admin",
-  "Cancelled by User",
-  "Return Requested",
-  "Return Approved",
-  "Return Rejected",
-  "Refund Initiated",
-  "Refund Completed",
-];
+import { ADMIN_ORDER_STATUSES as ORDER_STATUSES } from "@/lib/orderStatus";
 
 export default function OrderDetailsPage() {
   const { id } = useParams();

@@ -2,43 +2,75 @@ import { requireAdminAuth } from "@/lib/authHelpers";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/dbConnect";
 import Order from "@/models/Order";
+import { ORDER_GROUPS } from "@/lib/orderStatus";
+import { dateFilterFromParams } from "@/lib/dateRange";
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function groupFilter(group) {
+  if (group === "refundPending") return { paymentStatus: "Refund Pending" };
+  if (ORDER_GROUPS[group]) return { status: { $in: ORDER_GROUPS[group] } };
+  return {};
+}
 
 // GET ALL ORDERS (with populated product)
 async function handleGET(req) {
   try {
     await connectDB();
 
-    // Get pagination params
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    // Limit max to 100 to prevent excessive data transfer
-    const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 100);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "20")), 100);
     const skip = (page - 1) * limit;
     const status = searchParams.get("status");
+    const group = searchParams.get("group") || "all";
+    const payment = searchParams.get("payment");
+    const q = (searchParams.get("q") || "").trim().slice(0, 60);
 
-    // Build query
-    const query = {};
-    if (status && status !== "all") {
-      query.status = status;
+    // Filters shared by the list and the tab counts (everything except the status tab)
+    const base = { ...(dateFilterFromParams(searchParams) || {}) };
+    if (payment === "PayU" || payment === "COD") base.paymentMode = payment;
+    if (q) {
+      const rx = { $regex: escapeRegex(q), $options: "i" };
+      base.$or = [
+        { "address.name": rx },
+        { "address.phone": rx },
+        { "address.city": rx },
+        { awb: rx },
+        { $expr: { $regexMatch: { input: { $toString: "$_id" }, regex: escapeRegex(q), options: "i" } } },
+      ];
     }
 
-    // Get total count
-    const total = await Order.countDocuments(query);
+    const query = { ...base, ...groupFilter(group) };
+    if (status && status !== "all") query.status = status;
 
-    // Fetch orders with pagination, lean, and field selection (reduces data transfer)
-    const orders = await Order.find(query)
-      .select("items address totalAmount paymentMode paymentStatus status expectedDelivery createdAt userId awb courierName trackingUrl labelUrl shipmentId shiprocketOrderId shippedAt")
-      .populate("items.productId", "name images price slug") // Added slug for navigation
-      .populate("userId", "name email phone")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const [total, orders, statusCounts, refundPending] = await Promise.all([
+      Order.countDocuments(query),
+      Order.find(query)
+        .select("items address totalAmount paymentMode paymentStatus status expectedDelivery createdAt userId awb courierName trackingUrl labelUrl shipmentId shiprocketOrderId shippedAt")
+        .populate("items.productId", "name images price slug")
+        .populate("userId", "name email phone")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Order.aggregate([{ $match: base }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
+      Order.countDocuments({ ...base, paymentStatus: "Refund Pending" }),
+    ]);
 
-    return NextResponse.json({ 
-      success: true, 
+    const byStatus = Object.fromEntries(statusCounts.map((s) => [s._id, s.count]));
+    const counts = { all: statusCounts.reduce((n, s) => n + s.count, 0), refundPending };
+    for (const [key, statuses] of Object.entries(ORDER_GROUPS)) {
+      counts[key] = statuses.reduce((n, s) => n + (byStatus[s] || 0), 0);
+    }
+
+    return NextResponse.json({
+      success: true,
       orders,
       total,
+      counts,
       page,
       limit,
       totalPages: Math.ceil(total / limit)

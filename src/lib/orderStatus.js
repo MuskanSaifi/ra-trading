@@ -15,6 +15,37 @@ export const TRACKING_STEPS = [
 /** Statuses before dispatch, where a customer may still cancel. */
 export const CANCELLABLE_STATUSES = ["Pending", "Confirmed", "Processing", "Packed"];
 
+/** Every status an admin can set from the order screens. */
+export const ADMIN_ORDER_STATUSES = [
+  "Payment Pending",
+  "Payment Failed",
+  "Pending",
+  "Confirmed",
+  "Processing",
+  "Packed",
+  "Shipped",
+  "Out for Delivery",
+  "Delivered",
+  "Completed",
+  "Cancelled by Admin",
+  "Cancelled by User",
+  "Return Requested",
+  "Return Approved",
+  "Return Rejected",
+  "Refund Initiated",
+  "Refund Completed",
+];
+
+/** Status buckets used by admin order tabs and dashboard counts. */
+export const ORDER_GROUPS = {
+  payment: ["Payment Pending", "Payment Failed"],
+  toShip: CANCELLABLE_STATUSES,
+  inTransit: ["Shipped", "Out for Delivery"],
+  delivered: ["Delivered", "Completed"],
+  cancelled: ["Cancelled by Admin", "Cancelled by User"],
+  returns: ["Return Requested", "Return Approved", "Return Rejected", "Refund Initiated", "Refund Completed"],
+};
+
 export function isCancelled(status = "") {
   return String(status).startsWith("Cancelled");
 }

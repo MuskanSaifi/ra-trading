@@ -1,10 +1,11 @@
+import { requireAdminAuth } from "@/lib/authHelpers";
 
 import { connectDB } from "@/lib/dbConnect";
 import ContactForm from "@/models/ContactForm";
 import { NextResponse } from "next/server";
 
-// ✅ GET — fetch all messages
-export async function GET() {
+// GET — fetch all messages (admin only)
+async function handleGET() {
   try {
     await connectDB();
     const messages = await ContactForm.find().sort({ createdAt: -1 });
@@ -79,8 +80,8 @@ export async function POST(req) {
   }
 }
 
-// ✅ DELETE — delete by ID (admin only)
-export async function DELETE(req) {
+// DELETE — delete by ID (admin only)
+async function handleDELETE(req) {
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
@@ -110,3 +111,6 @@ export async function DELETE(req) {
     );
   }
 }
+
+export const GET = requireAdminAuth(handleGET);
+export const DELETE = requireAdminAuth(handleDELETE);

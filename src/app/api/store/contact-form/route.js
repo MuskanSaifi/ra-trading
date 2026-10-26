@@ -8,7 +8,8 @@ export async function POST(req) {
     await connectDB();
     const body = await req.json();
 
-    const saved = await ContactForm.create(body);
+    const { name, email, phone, subject, message } = body || {};
+    const saved = await ContactForm.create({ name, email, phone, subject, message });
 
     return NextResponse.json({ success: true, data: saved });
   } catch (e) {

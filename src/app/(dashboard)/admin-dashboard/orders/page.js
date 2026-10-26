@@ -1,326 +1,457 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronRight, Download, RotateCcw, Truck } from "lucide-react";
+import DateRangeFilter from "@/components/admin/ui/DateRangeFilter";
+import { EmptyState, PageHeader, Pagination, SearchInput, TableSkeleton, Tabs } from "@/components/admin/ui";
+import { rangeQuery } from "@/lib/dateRange";
+import {
+  ADMIN_ORDER_STATUSES,
+  CANCELLABLE_STATUSES,
+  TONE_CLASSES,
+  formatDate,
+  formatInr,
+  statusLabel,
+  statusTone,
+} from "@/lib/orderStatus";
 
-const ORDER_STATUSES = [
-  "Payment Pending",
-  "Payment Failed",
-  "Pending",
-  "Confirmed",
-  "Processing",
-  "Packed",
-  "Shipped",
-  "Out for Delivery",
-  "Delivered",
-  "Completed",
-  "Cancelled by Admin",
-  "Cancelled by User",
-  "Return Requested",
-  "Return Approved",
-  "Return Rejected",
-  "Refund Initiated",
-  "Refund Completed"
+const PAGE_SIZE = 20;
+
+const TAB_DEFS = [
+  { key: "all", label: "All" },
+  { key: "toShip", label: "To ship" },
+  { key: "inTransit", label: "In transit" },
+  { key: "delivered", label: "Delivered" },
+  { key: "cancelled", label: "Cancelled" },
+  { key: "returns", label: "Returns" },
+  { key: "payment", label: "Payment pending" },
+  { key: "refundPending", label: "Refund pending" },
 ];
 
-export default function AdminUserOrders() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [shippingId, setShippingId] = useState(null);
-  const [awbBusyId, setAwbBusyId] = useState(null);
-  const router = useRouter();
+function canShip(order) {
+  return (
+    CANCELLABLE_STATUSES.includes(order.status) &&
+    !order.awb &&
+    (order.paymentMode !== "PayU" || order.paymentStatus === "Paid")
+  );
+}
 
-  const fetchOrders = async () => {
+function paymentText(order) {
+  if (order.paymentMode === "PayU") {
+    return order.paymentStatus === "Paid" ? "Paid online" : `Online · ${order.paymentStatus || "Pending"}`;
+  }
+  return order.paymentStatus === "Paid" ? "COD · Collected" : "Cash on delivery";
+}
+
+function StatusSelect({ order, onChange, disabled }) {
+  return (
+    <select
+      value={order.status}
+      disabled={disabled}
+      onChange={(e) => onChange(order, e.target.value)}
+      className={`max-w-[11rem] rounded-full border-0 py-1 pl-2.5 pr-7 text-xs font-semibold ring-1 ring-inset ${TONE_CLASSES[statusTone(order.status)]}`}
+    >
+      {ADMIN_ORDER_STATUSES.map((s) => (
+        <option key={s} value={s}>
+          {statusLabel(s)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function OrdersPageInner() {
+  const router = useRouter();
+  const params = useSearchParams();
+
+  const [group, setGroup] = useState(params.get("group") || "all");
+  const [payment, setPayment] = useState("");
+  const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [range, setRange] = useState({ preset: "all" });
+  const [page, setPage] = useState(1);
+
+  const [orders, setOrders] = useState([]);
+  const [counts, setCounts] = useState({});
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => setPage(1), [group, payment, debounced, range]);
+
+  const buildQuery = useCallback(
+    (p, limit = PAGE_SIZE) => {
+      const qs = new URLSearchParams(rangeQuery(range));
+      qs.set("page", String(p));
+      qs.set("limit", String(limit));
+      if (group !== "all") qs.set("group", group);
+      if (payment) qs.set("payment", payment);
+      if (debounced) qs.set("q", debounced);
+      return qs.toString();
+    },
+    [range, group, payment, debounced]
+  );
+
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await fetch("/api/admin/admin-orders");
+      const res = await fetch(`/api/admin/admin-orders?${buildQuery(page)}`, { cache: "no-store" });
       const data = await res.json();
-      if (data.success) setOrders(data.orders);
-    } catch (err) {
-      console.error("Orders Load Error:", err);
+      if (data.success) {
+        setOrders(data.orders || []);
+        setCounts(data.counts || {});
+        setTotal(data.total || 0);
+        setTotalPages(data.totalPages || 0);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildQuery, page]);
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [fetchOrders]);
 
-  const updateStatus = async (orderId, newStatus) => {
+  const changeGroup = (key) => {
+    setGroup(key);
+    router.replace(key === "all" ? "/admin-dashboard/orders" : `/admin-dashboard/orders?group=${key}`, {
+      scroll: false,
+    });
+  };
+
+  const updateStatus = async (order, newStatus) => {
     let cancelReason = "";
-
     if (newStatus === "Cancelled by Admin") {
-      cancelReason = prompt("Please enter cancellation reason:");
-      if (!cancelReason || !cancelReason.trim()) {
-        alert("Cancellation reason is required.");
+      cancelReason = prompt("Reason for cancelling this order:") || "";
+      if (!cancelReason.trim()) return;
+      if (
+        order.paymentMode === "PayU" &&
+        order.paymentStatus === "Paid" &&
+        !confirm("This order was paid online. Cancelling will also send a PayU refund. Continue?")
+      ) {
         return;
       }
     }
-
+    setBusyId(order._id);
     try {
       const res = await fetch("/api/admin/admin-orders/update-order-status", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, status: newStatus, cancelReason })
+        body: JSON.stringify({ orderId: order._id, status: newStatus, cancelReason }),
       });
       const data = await res.json();
       if (!data.success || data.message !== "Order updated successfully") {
         alert(data.message || "Update failed");
       }
-
       fetchOrders();
-    } catch (error) {
-      console.error("Status update error:", error);
+    } finally {
+      setBusyId(null);
     }
   };
 
-  const shipViaShiprocket = async (orderId) => {
-    if (!confirm("Create Shiprocket shipment + AWB for this order?")) return;
-    setShippingId(orderId);
+  const ship = async (order) => {
+    if (!confirm(`Book Shiprocket shipment for order #${String(order._id).slice(-8).toUpperCase()}?`)) return;
+    setBusyId(order._id);
     try {
       const res = await fetch("/api/admin/shiprocket/create-shipment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId: order._id }),
       });
       const data = await res.json();
-      if (!data.success) {
-        alert(data.message || "Shiprocket shipment failed");
-        return;
+      alert(data.message || (data.success ? "Shipment created" : "Shiprocket request failed"));
+      fetchOrders();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const rows = [];
+      for (let p = 1; p <= 20; p++) {
+        const res = await fetch(`/api/admin/admin-orders?${buildQuery(p, 100)}`, { cache: "no-store" });
+        const data = await res.json();
+        if (!data.success) break;
+        rows.push(...(data.orders || []));
+        if (p >= (data.totalPages || 0)) break;
       }
-      alert(
-        data.order?.awb || data.shipment?.awb
-          ? `Shipped! AWB: ${data.order?.awb || data.shipment?.awb}`
-          : "Shipment created — AWB pending. Click Generate AWB."
+      const header = ["Order ID", "Date", "Customer", "Phone", "City", "State", "Pincode", "Items", "Total", "Payment", "Payment status", "Status", "AWB", "Courier"];
+      const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const lines = rows.map((o) =>
+        [
+          o._id,
+          new Date(o.createdAt).toLocaleString("en-IN"),
+          o.address?.name,
+          o.address?.phone,
+          o.address?.city,
+          o.address?.state,
+          o.address?.pincode,
+          (o.items || []).map((i) => `${i.name || i.productId?.name} x${i.quantity}`).join("; "),
+          o.totalAmount,
+          o.paymentMode,
+          o.paymentStatus,
+          o.status,
+          o.awb,
+          o.courierName,
+        ]
+          .map(esc)
+          .join(",")
       );
-      fetchOrders();
-    } catch (err) {
-      console.error(err);
-      alert("Shiprocket request failed");
+      const blob = new Blob([[header.map(esc).join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
     } finally {
-      setShippingId(null);
+      setExporting(false);
     }
   };
 
-  const generateAwb = async (orderId) => {
-    setAwbBusyId(orderId);
-    try {
-      const res = await fetch("/api/admin/shiprocket/assign-awb", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        alert(data.message || "AWB generate failed");
-        return;
-      }
-      alert(`AWB generated: ${data.shipment?.awb || data.order?.awb}`);
-      fetchOrders();
-    } catch (err) {
-      console.error(err);
-      alert("AWB request failed");
-    } finally {
-      setAwbBusyId(null);
-    }
-  };
-
-  const addManualAwb = async (orderId) => {
-    const awb = prompt("Enter AWB / tracking number:");
-    if (!awb || !awb.trim()) return;
-    const courierName = prompt("Courier name (optional):") || "";
-
-    setAwbBusyId(orderId);
-    try {
-      const res = await fetch("/api/admin/shiprocket/assign-awb", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId,
-          awb: awb.trim(),
-          courierName: courierName.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        alert(data.message || "Failed to save AWB");
-        return;
-      }
-      alert(`AWB saved: ${data.order?.awb}`);
-      fetchOrders();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save AWB");
-    } finally {
-      setAwbBusyId(null);
-    }
-  };
-
-  if (loading) return <p>Loading orders...</p>;
-  if (!orders.length) return <p>No orders found.</p>;
+  const filtersActive = payment || debounced || range.preset !== "all";
+  const tabs = TAB_DEFS.filter((t) => t.key !== "refundPending" || counts.refundPending > 0).map((t) => ({
+    ...t,
+    count: counts[t.key],
+  }));
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">All Orders</h2>
+    <div className="mx-auto max-w-7xl">
+      <PageHeader
+        title="Orders"
+        description="Confirm, ship, and track customer orders."
+        actions={
+          <button
+            type="button"
+            onClick={exportCsv}
+            disabled={exporting || !total}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" /> {exporting ? "Exporting…" : "Export CSV"}
+          </button>
+        }
+      />
 
-      <div className="space-y-6">
-        {orders.map(order => (
-          <div key={order._id} className="border p-5 rounded-xl bg-white shadow space-y-4">
+      <Tabs tabs={tabs} value={group} onChange={changeGroup} />
 
-            <div className="flex justify-between items-center">
-              <p
-                className="font-semibold text-blue-600 cursor-pointer hover:underline"
-                onClick={() => router.push(`/admin-dashboard/orders/${order._id}`)}
-              >
-                Order ID: #{order._id}
-              </p>
+      <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search name, phone, city, order ID or AWB"
+          className="lg:w-96"
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={payment}
+            onChange={(e) => setPayment(e.target.value)}
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm"
+          >
+            <option value="">All payments</option>
+            <option value="PayU">Online (PayU)</option>
+            <option value="COD">Cash on delivery</option>
+          </select>
+          <DateRangeFilter value={range} onChange={setRange} />
+          {filtersActive && (
+            <button
+              type="button"
+              onClick={() => {
+                setPayment("");
+                setSearch("");
+                setRange({ preset: "all" });
+              }}
+              className="inline-flex h-10 items-center gap-1 rounded-xl px-3 text-sm font-medium text-slate-600 hover:bg-slate-100"
+            >
+              <RotateCcw className="h-4 w-4" /> Reset
+            </button>
+          )}
+        </div>
+      </div>
 
-              <p className="text-sm">{new Date(order.createdAt).toLocaleString()}</p>
-            </div>
-
-            <div className="bg-gray-100 p-3 rounded">
-              <p className="font-semibold">{order.address?.name} ({order.address?.phone})</p>
-              <p className="text-sm text-gray-700">
-                {order.address?.street}, {order.address?.city}, {order.address?.state} - {order.address?.pincode}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="font-semibold">Status:</p>
-              <select
-                value={order.status}
-                onChange={(e) => updateStatus(order._id, e.target.value)}
-                className="border px-3 py-1 rounded text-sm"
-              >
-                {ORDER_STATUSES.map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-
-              {!order.awb &&
-                !String(order.status || "").includes("Cancel") &&
-                !(order.paymentMode === "PayU" && order.paymentStatus !== "Paid") && (
-                <>
-                  {!order.shipmentId && (
-                    <button
-                      type="button"
-                      onClick={() => shipViaShiprocket(order._id)}
-                      disabled={shippingId === order._id}
-                      className="rounded bg-[#6f1d1b] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
-                    >
-                      {shippingId === order._id ? "Creating..." : "Ship via Shiprocket"}
-                    </button>
-                  )}
-
-                  {order.shipmentId && (
-                    <button
-                      type="button"
-                      onClick={() => generateAwb(order._id)}
-                      disabled={awbBusyId === order._id}
-                      className="rounded bg-purple-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
-                    >
-                      {awbBusyId === order._id ? "Generating..." : "Generate AWB"}
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => addManualAwb(order._id)}
-                    disabled={awbBusyId === order._id}
-                    className="rounded border border-[#6f1d1b] px-3 py-1.5 text-sm font-medium text-[#6f1d1b] disabled:opacity-60"
-                  >
-                    Add AWB Manually
-                  </button>
-                </>
-              )}
-
-              {order.awb && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const res = await fetch(
-                      `/api/admin/shiprocket/track?orderId=${order._id}`
+      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {loading ? (
+          <TableSkeleton />
+        ) : orders.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              title="No orders found"
+              description={filtersActive || group !== "all" ? "Try another tab or clear the filters." : "New orders will appear here."}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Order</th>
+                    <th className="px-4 py-3 font-semibold">Customer</th>
+                    <th className="px-4 py-3 font-semibold">Items</th>
+                    <th className="px-4 py-3 font-semibold">Total</th>
+                    <th className="px-4 py-3 font-semibold">Status</th>
+                    <th className="px-4 py-3 font-semibold">Shipping</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {orders.map((o) => {
+                    const qty = (o.items || []).reduce((n, i) => n + Number(i.quantity || 0), 0);
+                    return (
+                      <tr key={o._id} className="align-top hover:bg-slate-50/70">
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/admin-dashboard/orders/${o._id}`}
+                            className="font-semibold text-[var(--store-primary)] hover:underline"
+                          >
+                            #{String(o._id).slice(-8).toUpperCase()}
+                          </Link>
+                          <p className="text-xs text-slate-500">{formatDate(o.createdAt, true)}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-slate-900">{o.address?.name || o.userId?.name || "—"}</p>
+                          <p className="text-xs text-slate-500">
+                            {o.address?.phone} · {o.address?.city}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex -space-x-2">
+                              {(o.items || []).slice(0, 3).map((i, idx) => (
+                                <img
+                                  key={idx}
+                                  src={i.productId?.images?.[0]?.url || "/placeholder.png"}
+                                  alt=""
+                                  className="h-8 w-8 rounded-md border-2 border-white object-cover"
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs text-slate-500">
+                              {qty} item{qty === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                          <p className="mt-1 max-w-[14rem] truncate text-xs text-slate-600">
+                            {o.items?.[0]?.productId?.name || o.items?.[0]?.name}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="font-semibold text-slate-900">{formatInr(o.totalAmount)}</p>
+                          <p
+                            className={`text-xs ${
+                              o.paymentMode === "PayU" && o.paymentStatus !== "Paid" ? "text-amber-700" : "text-slate-500"
+                            }`}
+                          >
+                            {paymentText(o)}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusSelect order={o} onChange={updateStatus} disabled={busyId === o._id} />
+                        </td>
+                        <td className="px-4 py-3">
+                          {o.awb ? (
+                            <div className="text-xs">
+                              <p className="font-medium text-slate-800">{o.courierName || "Courier"}</p>
+                              <p className="text-slate-500">AWB {o.awb}</p>
+                            </div>
+                          ) : canShip(o) ? (
+                            <button
+                              type="button"
+                              disabled={busyId === o._id}
+                              onClick={() => ship(o)}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--store-primary)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--store-primary-dark)] disabled:opacity-60"
+                            >
+                              <Truck className="h-3.5 w-3.5" />
+                              {o.shipmentId ? "Get AWB" : "Ship"}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-slate-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Link
+                            href={`/admin-dashboard/orders/${o._id}`}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                            aria-label="Open order"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        </td>
+                      </tr>
                     );
-                    const data = await res.json();
-                    if (!data.success) return alert(data.message || "Track failed");
-                    const st =
-                      data.tracking?.tracking_data?.shipment_status ||
-                      data.tracking?.shipment_status ||
-                      "OK";
-                    alert(`Tracking: ${st}`);
-                  }}
-                  className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white"
-                >
-                  Track AWB
-                </button>
-              )}
+                  })}
+                </tbody>
+              </table>
             </div>
 
-            {(order.awb || order.trackingUrl || order.courierName || order.shipmentId) && (
-              <div className="rounded border border-purple-100 bg-purple-50 p-3 text-sm space-y-1">
-                {order.shipmentId && !order.awb && (
-                  <p className="text-amber-700">Shipment created — AWB pending</p>
-                )}
-                {order.courierName && <p><strong>Courier:</strong> {order.courierName}</p>}
-                {order.awb && <p><strong>AWB:</strong> {order.awb}</p>}
-                {order.trackingUrl && (
-                  <a
-                    href={order.trackingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 underline"
-                  >
-                    Track shipment
-                  </a>
-                )}
-                {order.labelUrl && (
-                  <a
-                    href={order.labelUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-3 text-blue-600 underline"
-                  >
-                    Label
-                  </a>
-                )}
-              </div>
-            )}
-
-            {order.cancelReason && (
-              <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                Reason: <strong>{order.cancelReason}</strong>
-              </p>
-            )}
-
-            <p className="font-bold text-lg text-purple-700">
-              Total: ₹{Number(order.totalAmount).toLocaleString()}
-              <span className="ml-2 text-sm font-medium text-gray-600">
-                ({order.paymentMode || "COD"} / {order.paymentStatus || "Pending"})
-              </span>
-            </p>
-
-            <div className="space-y-4">
-              {order.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between border-b pb-3">
-                  <div className="flex gap-3 items-center">
-                    <img
-                      src={item.productId?.images?.[0]?.url || "/placeholder.png"}
-                      className="w-14 h-14 rounded border"
-                      alt=""
-                    />
+            {/* Mobile cards */}
+            <ul className="divide-y divide-slate-100 lg:hidden">
+              {orders.map((o) => (
+                <li key={o._id} className="space-y-3 p-4">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold">{item.name}</p>
-                      <p className="text-sm">Qty: {item.quantity}</p>
-                      <p className="text-sm">₹{item.price}</p>
+                      <Link
+                        href={`/admin-dashboard/orders/${o._id}`}
+                        className="font-semibold text-[var(--store-primary)]"
+                      >
+                        #{String(o._id).slice(-8).toUpperCase()}
+                      </Link>
+                      <p className="text-xs text-slate-500">{formatDate(o.createdAt, true)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-slate-900">{formatInr(o.totalAmount)}</p>
+                      <p className="text-xs text-slate-500">{paymentText(o)}</p>
                     </div>
                   </div>
-                </div>
+                  <p className="text-sm text-slate-700">
+                    {o.address?.name} · {o.address?.phone} · {o.address?.city}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusSelect order={o} onChange={updateStatus} disabled={busyId === o._id} />
+                    {canShip(o) && (
+                      <button
+                        type="button"
+                        disabled={busyId === o._id}
+                        onClick={() => ship(o)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--store-primary)] px-3 py-1.5 text-xs font-semibold text-white"
+                      >
+                        <Truck className="h-3.5 w-3.5" /> {o.shipmentId ? "Get AWB" : "Ship"}
+                      </button>
+                    )}
+                    {o.awb && <span className="text-xs text-slate-500">AWB {o.awb}</span>}
+                    <Link
+                      href={`/admin-dashboard/orders/${o._id}`}
+                      className="ml-auto text-xs font-semibold text-slate-600"
+                    >
+                      Details →
+                    </Link>
+                  </div>
+                </li>
               ))}
-            </div>
-
-          </div>
-        ))}
+            </ul>
+          </>
+        )}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} label="orders" />
     </div>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={null}>
+      <OrdersPageInner />
+    </Suspense>
   );
 }

@@ -3,29 +3,76 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Eye, Pencil, Trash2 } from "lucide-react";
+import DateRangeFilter from "@/components/admin/ui/DateRangeFilter";
+import { EmptyState, PageHeader, Pagination, SearchInput, TableSkeleton } from "@/components/admin/ui";
+import { rangeQuery } from "@/lib/dateRange";
+import { formatDate, formatInr } from "@/lib/orderStatus";
+
+const PAGE_SIZE = 15;
+const PROFILE_FIELDS = ["name", "email", "phone", "gender", "address", "dob"];
+
+function profileCompletion(u) {
+  const filled = PROFILE_FIELDS.filter((f) => u?.[f]).length;
+  return Math.round((filled / PROFILE_FIELDS.length) * 100);
+}
+
+function Avatar({ user }) {
+  if (user.profilePic?.url) {
+    return (
+      <Image
+        src={user.profilePic.url}
+        width={36}
+        height={36}
+        alt=""
+        className="h-9 w-9 rounded-full border border-slate-200 object-cover"
+      />
+    );
+  }
+  const initials = (user.name || user.phone || "?")
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  return (
+    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--store-primary)]/10 text-xs font-bold text-[var(--store-primary)]">
+      {initials}
+    </span>
+  );
+}
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [range, setRange] = useState({ preset: "all" });
+  const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const limit = 10;
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => setPage(1), [debounced, range, sort]);
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await fetch(
-        `/api/admin/users?search=${search}&page=${page}&limit=${limit}`
-      );
+      const qs = new URLSearchParams(rangeQuery(range));
+      qs.set("page", String(page));
+      qs.set("limit", String(PAGE_SIZE));
+      if (debounced) qs.set("search", debounced);
+      if (sort === "name") qs.set("sort", "name");
+      const res = await fetch(`/api/admin/users?${qs}`, { cache: "no-store" });
       const data = await res.json();
       if (data.success) {
-        setUsers(data.users);
-        setTotal(data.total);
+        setUsers(data.users || []);
+        setTotal(data.total || 0);
       }
-    } catch (err) {
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -33,165 +80,131 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [search, page]);
+  }, [debounced, range, sort, page]);
 
-  const getProfileCompletion = (u) => {
-    const fields = ["name", "email", "phone", "gender", "address", "dob"];
-    const filled = fields.filter((f) => u?.[f]).length;
-    return Math.round((filled / fields.length) * 100);
+  const handleDelete = async (u) => {
+    if (!confirm(`Delete ${u.name || u.phone}? This cannot be undone.`)) return;
+    const res = await fetch(`/api/admin/users?id=${u._id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.success) fetchUsers();
+    else alert(data.message);
   };
-
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
-    try {
-      const res = await fetch(`/api/admin/users?id=${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.success) fetchUsers();
-      else alert(data.message);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-
-  const totalPages = Math.ceil(total / limit);
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Users</h2>
+    <div className="mx-auto max-w-7xl">
+      <PageHeader title="Customers" description="Everyone who has signed up on the store." />
 
-      {/* Search */}
-      <input
-        type="text"
-        placeholder="Search by name, email, phone..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="border px-3 py-2 mb-4 rounded w-full max-w-md"
-      />
-
-      {loading ? (
-        <p>Loading users...</p>
-      ) : users.length === 0 ? (
-        <p>No users found.</p>
-      ) : (
-        <table className="w-full bg-white text-gray-900 shadow rounded-lg overflow-hidden">
-          <thead className="bg-gray-200">
-            <tr>
-              <th className="px-4 py-2">Profile</th>
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Email</th>
-              <th className="px-4 py-2">Phone</th>
-              <th className="px-4 py-2">Type</th>
-              <th className="px-4 py-2">Profile %</th>
-              <th className="px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {users.map((u) => {
-              const percent = getProfileCompletion(u);
-
-              return (
-                <tr key={u._id} className="border-b hover:bg-gray-50">
-                  {/* Profile Image */}
-                  <td className="px-4 py-2">
-                    {u.profilePic?.url ? (
-                      <Image
-                        src={u.profilePic.url}
-                        width={48} 
-                        height={48}
-                        alt="Profile"
-                        className="w-12 h-12 rounded-full object-cover border"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
-                        <span className="text-xs">No Img</span>
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Name */}
-                  <td className="px-4 py-2 font-semibold">
-                    {u.name || "—"}
-                  </td>
-
-                  {/* Email */}
-                  <td className="px-4 py-2">{u.email || "—"}</td>
-
-                  {/* Phone */}
-                  <td className="px-4 py-2">{u.phone || "—"}</td>
-
-                  {/* Account Type */}
-                  <td className="px-4 py-2">
-                    <span
-                      className={`px-2 py-1 text-sm rounded 
-                      ${u.accountType === "Admin" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}`}
-                    >
-                      {u.accountType || "Regular"}
-                    </span>
-                  </td>
-
-                  {/* Profile Completion */}
-                  <td className="px-4 py-2">
-                    <div className="flex flex-col gap-1 w-32">
-                      <div className="w-full bg-gray-300 rounded h-2 overflow-hidden">
-                        <div
-                          className="bg-green-600 h-2"
-                          style={{ width: `${percent}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-semibold text-gray-700">
-                        {percent}%
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-4 py-2 flex gap-3">
-                    <Link
-                      href={`/admin-dashboard/users/${u._id}/view`}
-                      className="text-blue-600"
-                    >
-                      View
-                    </Link>
-
-                    <Link
-                      href={`/admin-dashboard/users/${u._id}/edit`}
-                      className="text-green-600"
-                    >
-                      Edit
-                    </Link>
-
-                    <button
-                      onClick={() => handleDelete(u._id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-4 flex gap-2 flex-wrap">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPage(p)}
-              className={`px-3 py-1 border rounded ${
-                p === page ? "bg-blue-600 text-white" : "bg-white"
-              }`}
-            >
-              {p}
-            </button>
-          ))}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <SearchInput value={search} onChange={setSearch} placeholder="Search name, phone or email" className="lg:w-96" />
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm"
+          >
+            <option value="newest">Newest first</option>
+            <option value="name">Name A–Z</option>
+          </select>
+          <DateRangeFilter value={range} onChange={setRange} />
         </div>
-      )}
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {loading ? (
+          <TableSkeleton />
+        ) : users.length === 0 ? (
+          <div className="p-6">
+            <EmptyState title="No customers found" description="Try a different search or date range." />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Customer</th>
+                  <th className="px-4 py-3 font-semibold">Contact</th>
+                  <th className="px-4 py-3 font-semibold">Joined</th>
+                  <th className="px-4 py-3 font-semibold">Orders</th>
+                  <th className="px-4 py-3 font-semibold">Profile</th>
+                  <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {users.map((u) => {
+                  const pct = profileCompletion(u);
+                  return (
+                    <tr key={u._id} className="hover:bg-slate-50/70">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar user={u} />
+                          <div>
+                            <p className="font-medium text-slate-900">{u.name || "Unnamed"}</p>
+                            <p className="text-xs text-slate-500">{u.city || u.accountType || "Regular"}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-slate-800">{u.phone || "—"}</p>
+                        <p className="text-xs text-slate-500">{u.email || "No email"}</p>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{formatDate(u.createdAt)}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-slate-900">{u.orderCount}</p>
+                        <p className="text-xs text-slate-500">{u.orderCount ? formatInr(u.totalSpent) : "No orders"}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex w-28 items-center gap-2">
+                          <div className="h-1.5 flex-1 rounded-full bg-slate-200">
+                            <div
+                              className={`h-1.5 rounded-full ${pct >= 80 ? "bg-green-600" : pct >= 50 ? "bg-amber-500" : "bg-red-400"}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-slate-600">{pct}%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1">
+                          <Link
+                            href={`/admin-dashboard/users/${u._id}/view`}
+                            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                            aria-label="View"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                          <Link
+                            href={`/admin-dashboard/users/${u._id}/edit`}
+                            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                            aria-label="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(u)}
+                            className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                            aria-label="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <Pagination
+        page={page}
+        totalPages={Math.ceil(total / PAGE_SIZE)}
+        total={total}
+        onChange={setPage}
+        label="customers"
+      />
     </div>
   );
 }

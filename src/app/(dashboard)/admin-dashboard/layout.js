@@ -73,7 +73,7 @@ export default function AdminDashboardLayout({ children }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100 text-slate-600">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 rounded-full border-2 border-[#ff9900] border-t-transparent animate-spin" />
+          <div className="h-10 w-10 rounded-full border-2 border-[var(--store-primary)] border-t-transparent animate-spin" />
           <p className="text-sm font-medium">Checking admin session…</p>
         </div>
       </div>
@@ -81,7 +81,7 @@ export default function AdminDashboardLayout({ children }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-100 text-slate-900">
+    <div className="flex min-h-screen bg-slate-50 text-slate-900">
       {sidebarOpen && (
         <button
           type="button"
@@ -94,7 +94,7 @@ export default function AdminDashboardLayout({ children }) {
       <aside
         className={[
           "fixed top-0 left-0 z-50 flex h-full w-[min(18rem,88vw)] flex-col bg-white shadow-2xl transition-transform duration-200 ease-out",
-          "border-r border-slate-200 md:static md:z-0 md:w-64 md:max-w-none md:translate-x-0 md:shadow-md",
+          "border-r border-slate-200 md:sticky md:top-0 md:z-0 md:h-screen md:w-64 md:max-w-none md:translate-x-0 md:shadow-none",
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         ].join(" ")}
       >

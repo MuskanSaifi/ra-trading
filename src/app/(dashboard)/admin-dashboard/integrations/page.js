@@ -10,7 +10,7 @@ export default function IntegrationsPage() {
   const [msg, setMsg] = useState("");
   const [status, setStatus] = useState(null);
   const [form, setForm] = useState({
-    shiprocketPickupLocation: "Primary",
+    shiprocketPickupLocation: "",
     shiprocketPickupPincode: "",
     shiprocketChannelId: "",
     shiprocketBillingEmail: "",
@@ -176,6 +176,9 @@ export default function IntegrationsPage() {
               ? "Connected"
               : status?.shiprocket?.error || "Not connected"}
           </p>
+          {status?.shiprocket?.connected && status?.shiprocket?.error && (
+            <p className="mt-2 rounded bg-red-50 p-2 text-xs text-red-700">{status.shiprocket.error}</p>
+          )}
           <label className="mt-3 flex items-center gap-2 text-sm">
             <input
               type="checkbox"
@@ -202,18 +205,41 @@ export default function IntegrationsPage() {
         <h2 className="text-lg font-semibold">Shiprocket warehouse defaults</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="text-sm">
-            Pickup location name
-            <input
-              className="mt-1 w-full rounded border px-3 py-2"
-              value={form.shiprocketPickupLocation || ""}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  shiprocketPickupLocation: e.target.value,
-                }))
-              }
-              placeholder="Primary"
-            />
+            Pickup location (from Shiprocket)
+            {status?.shiprocket?.pickupLocations?.length ? (
+              <select
+                className="mt-1 w-full rounded border px-3 py-2"
+                value={form.shiprocketPickupLocation || ""}
+                onChange={(e) => {
+                  const picked = status.shiprocket.pickupLocations.find((p) => p.name === e.target.value);
+                  setForm((f) => ({
+                    ...f,
+                    shiprocketPickupLocation: e.target.value,
+                    shiprocketPickupPincode: picked?.pincode || f.shiprocketPickupPincode,
+                  }));
+                }}
+              >
+                <option value="">Use .env value ({status.shiprocket.activePickup || "not set"})</option>
+                {status.shiprocket.pickupLocations.map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.name}
+                    {p.primary ? " (primary)" : ""} — {p.address}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="mt-1 w-full rounded border px-3 py-2"
+                value={form.shiprocketPickupLocation || ""}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    shiprocketPickupLocation: e.target.value,
+                  }))
+                }
+                placeholder="Exact nickname from Shiprocket, e.g. shop"
+              />
+            )}
           </label>
           <label className="text-sm">
             Pickup pincode

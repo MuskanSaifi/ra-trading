@@ -8,7 +8,7 @@ import {
   assignShiprocketAwb,
   isShiprocketConfigured,
 } from "@/lib/shiprocket";
-import { recordStatus } from "@/lib/orderLifecycle";
+import { recordStatus, schedulePickup } from "@/lib/orderLifecycle";
 import { CANCELLABLE_STATUSES } from "@/lib/orderStatus";
 
 export const runtime = "nodejs";
@@ -123,6 +123,7 @@ async function handlePOST(req) {
     order.trackingUrl = assigned.trackingUrl;
     order.labelUrl = assigned.labelUrl || order.labelUrl;
     if (!order.shippedAt) order.shippedAt = new Date();
+    const pickup = await schedulePickup(order);
     recordStatus(
       order,
       "Shipped",
@@ -135,19 +136,21 @@ async function handlePOST(req) {
     if (user) {
       await notifyUser({
         userId: user._id,
-        title: "AWB Generated",
-        message: `Your order #${order._id} AWB: ${assigned.awb}${assigned.courierName ? ` (${assigned.courierName})` : ""}`,
+        title: "Order Shipped",
+        message: `Your order #${order._id} has been shipped. AWB: ${assigned.awb}${assigned.courierName ? ` (${assigned.courierName})` : ""}`,
         type: "order",
         priority: "high",
         relatedId: order._id,
         relatedType: "order",
-        actionUrl: "/user-dashboard/orders",
+        actionUrl: `/user-dashboard/orders/${order._id}`,
       });
     }
 
     return NextResponse.json({
       success: true,
-      message: "AWB generated successfully",
+      message: pickup.ok
+        ? `AWB generated. Courier pickup requested${pickup.scheduledDate ? ` for ${pickup.scheduledDate}` : ""}.`
+        : `AWB generated. Pickup request failed: ${pickup.message}`,
       order,
       shipment: assigned,
     });

@@ -1,5 +1,32 @@
 import { isPayuConfigured, refundPayuPayment } from "@/lib/payu";
-import { cancelShiprocketOrder, isShiprocketConfigured } from "@/lib/shiprocket";
+import {
+  cancelShiprocketOrder,
+  isShiprocketConfigured,
+  requestShiprocketPickup,
+} from "@/lib/shiprocket";
+
+/** Requests a courier pickup for an order that has an AWB. Does not save. */
+export async function schedulePickup(order) {
+  if (!order.shipmentId || !order.awb) {
+    return { ok: false, message: "Shipment needs an AWB before pickup" };
+  }
+  try {
+    const pickup = await requestShiprocketPickup(order.shipmentId);
+    order.pickupRequestedAt = new Date();
+    order.pickupScheduledFor = pickup.scheduledDate || "";
+    order.pickupError = undefined;
+    return { ok: true, scheduledDate: pickup.scheduledDate };
+  } catch (err) {
+    // Shiprocket answers "already in pickup queue" when a pickup exists; treat that as done
+    if (/already|queue/i.test(err.message || "")) {
+      order.pickupRequestedAt = order.pickupRequestedAt || new Date();
+      order.pickupError = undefined;
+      return { ok: true, scheduledDate: order.pickupScheduledFor || null };
+    }
+    order.pickupError = err.message || "Pickup request failed";
+    return { ok: false, message: order.pickupError };
+  }
+}
 
 /** Sets the order status and appends it to the status history. Does not save. */
 export function recordStatus(order, status, note = "") {

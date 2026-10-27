@@ -57,6 +57,9 @@ const orderSchema = new mongoose.Schema(
     trackingUrl: { type: String },
     labelUrl: { type: String },
     shippedAt: { type: Date },
+    pickupRequestedAt: { type: Date },
+    pickupScheduledFor: { type: String },
+    pickupError: { type: String },
   },
   { timestamps: true }
 );

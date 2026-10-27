@@ -3,7 +3,8 @@
 const IntegrationSettingsSchema = new mongoose.Schema(
   {
     // Shiprocket non-secret settings (credentials stay in .env)
-    shiprocketPickupLocation: { type: String, default: "Primary" },
+    // Empty means "use SHIPROCKET_PICKUP_LOCATION from .env"
+    shiprocketPickupLocation: { type: String, default: "" },
     shiprocketPickupPincode: { type: String, default: "" },
     shiprocketChannelId: { type: String, default: "" },
     shiprocketBillingEmail: { type: String, default: "" },

@@ -112,6 +112,22 @@ export default function OrderDetailsPage() {
     }
   };
 
+  const requestPickup = async () => {
+    setBusy("pickup");
+    try {
+      const res = await fetch("/api/admin/shiprocket/pickup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: id }),
+      });
+      const data = await res.json();
+      alert(data.message || (data.success ? "Pickup requested" : "Pickup request failed"));
+      await fetchOrder();
+    } finally {
+      setBusy("");
+    }
+  };
+
   const trackAwb = async () => {
     setBusy("track");
     try {
@@ -294,6 +310,20 @@ export default function OrderDetailsPage() {
               Add AWB Manually
             </button>
           )}
+          {order.awb && order.shipmentId && order.status === "Shipped" && (
+            <button
+              type="button"
+              disabled={!!busy}
+              onClick={requestPickup}
+              className="rounded bg-amber-600 px-3 py-1.5 text-sm text-white disabled:opacity-60"
+            >
+              {busy === "pickup"
+                ? "Requesting..."
+                : order.pickupRequestedAt
+                  ? "Request pickup again"
+                  : "Request pickup"}
+            </button>
+          )}
           {order.awb && (
             <button
               type="button"
@@ -305,6 +335,24 @@ export default function OrderDetailsPage() {
             </button>
           )}
         </div>
+
+        {order.awb && order.shipmentId && (
+          <p
+            className={`rounded p-2 text-sm ${
+              order.pickupError
+                ? "bg-red-50 text-red-700"
+                : order.pickupRequestedAt
+                  ? "bg-green-50 text-green-800"
+                  : "bg-amber-50 text-amber-800"
+            }`}
+          >
+            {order.pickupError
+              ? `Pickup request failed: ${order.pickupError}`
+              : order.pickupRequestedAt
+                ? `Courier pickup requested${order.pickupScheduledFor ? ` for ${order.pickupScheduledFor}` : ""}. Print the label and keep the parcel ready.`
+                : "Pickup not requested yet. Click Request pickup so the courier collects the parcel."}
+          </p>
+        )}
 
         {(order.awb || order.shipmentId || order.courierName) && (
           <div className="space-y-1 rounded border border-purple-100 bg-purple-50 p-3 text-sm">

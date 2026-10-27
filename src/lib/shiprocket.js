@@ -103,10 +103,13 @@ export async function createShiprocketShipment({
   const token = await getShiprocketToken();
   const { first, last } = splitName(order.address?.name || user?.name || "Customer");
   const pkg = estimatePackage(order.items);
-  const paymentMethod =
-    order.paymentMode === "COD" || order.paymentStatus === "Pending"
-      ? "COD"
-      : "Prepaid";
+  const paymentMethod = order.paymentMode === "PayU" ? "Prepaid" : "COD";
+  const itemsTotal = (order.items || []).reduce(
+    (sum, i) => sum + Number(i.price || 0) * Number(i.quantity || 1),
+    0
+  );
+  // The courier collects sub_total + shipping_charges on COD, so this must add up to the order total
+  const shippingCharges = Math.max(0, Number(order.totalAmount || 0) - itemsTotal);
 
   const orderDate = new Date(order.createdAt || Date.now())
     .toISOString()
@@ -142,11 +145,11 @@ export async function createShiprocketShipment({
       hsn: Number(process.env.SHIPROCKET_DEFAULT_HSN || 3305),
     })),
     payment_method: paymentMethod,
-    shipping_charges: 0,
+    shipping_charges: Number(shippingCharges.toFixed(2)),
     giftwrap_charges: 0,
     transaction_charges: 0,
     total_discount: 0,
-    sub_total: Number(order.totalAmount || 0),
+    sub_total: Number(itemsTotal.toFixed(2)),
     length: pkg.length,
     breadth: pkg.breadth,
     height: pkg.height,
@@ -270,6 +273,37 @@ export async function assignShiprocketAwb(shipmentId, courierId, existingToken) 
     trackingUrl: `https://shiprocket.co/tracking/${awb}`,
     raw: assignData,
   };
+}
+
+/**
+ * Asks the assigned courier to collect the parcel from the pickup address.
+ * Returns { scheduledDate, token } or throws.
+ */
+export async function requestShiprocketPickup(shipmentId, existingToken) {
+  if (!shipmentId) throw new Error("shipmentId is required to request pickup");
+  const token = existingToken || (await getShiprocketToken());
+  const data = await shiprocketFetch("/courier/generate/pickup", {
+    method: "POST",
+    token,
+    body: { shipment_id: [Number(shipmentId) || shipmentId] },
+  });
+  const res = data?.response || data;
+  return {
+    scheduledDate: res?.pickup_scheduled_date || res?.data?.pickup_scheduled_date || null,
+    token: res?.pickup_token_number || null,
+    raw: data,
+  };
+}
+
+export async function listShiprocketPickupLocations() {
+  const token = await getShiprocketToken();
+  const data = await shiprocketFetch("/settings/company/pickup", { token });
+  return (data?.data?.shipping_address || []).map((a) => ({
+    name: a.pickup_location,
+    address: [a.address, a.city, a.pin_code].filter(Boolean).join(", "),
+    pincode: a.pin_code,
+    primary: Boolean(a.is_primary_location),
+  }));
 }
 
 export async function trackShiprocketByAwb(awb) {

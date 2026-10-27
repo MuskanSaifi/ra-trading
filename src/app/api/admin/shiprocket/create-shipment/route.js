@@ -13,7 +13,7 @@ import {
   getIntegrationSettings,
   applyShiprocketEnvOverrides,
 } from "@/lib/getIntegrationSettings";
-import { recordStatus } from "@/lib/orderLifecycle";
+import { recordStatus, schedulePickup } from "@/lib/orderLifecycle";
 
 export const runtime = "nodejs";
 
@@ -129,12 +129,16 @@ async function handlePOST(req) {
       }
     }
 
+    let pickup = null;
     if (order.awb) {
       order.shippedAt = new Date();
+      pickup = await schedulePickup(order);
       recordStatus(
         order,
         "Shipped",
-        `Shipped via ${order.courierName || "courier"} · AWB ${order.awb}`
+        `Shipped via ${order.courierName || "courier"} · AWB ${order.awb}${
+          pickup.ok && pickup.scheduledDate ? ` · pickup ${pickup.scheduledDate}` : ""
+        }`
       );
     } else {
       recordStatus(order, "Packed", "Shipment booked on Shiprocket, awaiting AWB");
@@ -159,9 +163,13 @@ async function handlePOST(req) {
 
     return NextResponse.json({
       success: true,
-      message: order.awb
-        ? `Shipment created. AWB: ${order.awb}`
-        : "Shipment created but AWB pending — use Generate AWB",
+      message: !order.awb
+        ? "Shipment created but AWB pending — use Get AWB"
+        : pickup?.ok
+          ? `Shipment created. AWB: ${order.awb}. Courier pickup requested${
+              pickup.scheduledDate ? ` for ${pickup.scheduledDate}` : ""
+            }.`
+          : `Shipment created. AWB: ${order.awb}. Pickup request failed: ${pickup?.message}. Use Request pickup on the order page.`,
       order,
       shipment,
     });

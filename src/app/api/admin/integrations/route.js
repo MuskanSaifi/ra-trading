@@ -8,6 +8,7 @@ import { getPayuEnv, getPayuKeyPreview, isPayuConfigured } from "@/lib/payu";
 import {
   isShiprocketConfigured,
   getShiprocketToken,
+  listShiprocketPickupLocations,
 } from "@/lib/shiprocket";
 
 export const runtime = "nodejs";
@@ -19,13 +20,25 @@ async function handleGET() {
 
     let shiprocketOk = false;
     let shiprocketError = null;
+    let pickupLocations = [];
     if (isShiprocketConfigured()) {
       try {
         await getShiprocketToken(true);
         shiprocketOk = true;
+        pickupLocations = await listShiprocketPickupLocations().catch(() => []);
       } catch (err) {
         shiprocketError = err.message;
       }
+    }
+    const activePickup = settings.shiprocketPickupLocation || process.env.SHIPROCKET_PICKUP_LOCATION || "";
+    if (
+      shiprocketOk &&
+      pickupLocations.length &&
+      !pickupLocations.some((p) => p.name === activePickup)
+    ) {
+      shiprocketError = `Pickup location "${activePickup}" was not found in Shiprocket. Choose one of: ${pickupLocations
+        .map((p) => p.name)
+        .join(", ")}`;
     }
 
     return NextResponse.json({
@@ -46,6 +59,8 @@ async function handleGET() {
             ? String(process.env.SHIPROCKET_EMAIL).replace(/(.{3}).+(@.+)/, "$1***$2")
             : null,
           error: shiprocketError,
+          pickupLocations,
+          activePickup,
         },
         cod: { enabled: settings.codEnabled !== false },
       },

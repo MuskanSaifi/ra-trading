@@ -1,0 +1,225 @@
+@import "tailwindcss";
+
+/* Design tokens — change here to retheme the whole store */
+:root {
+  /* Maroon / blush theme (matches current UI direction) */
+  --store-primary: #6b2326;
+  --store-primary-rgb: 107, 35, 38;
+  --store-primary-dark: #4b1719;
+  --store-primary-soft: #f7e9ea;
+  --store-accent: #d9a3a5;
+  --store-ink: #2a0f12;
+  --store-muted: #7a6b6d;
+  --store-border: #eadfe0;
+  --store-surface: #fbf6f6;
+  --store-radius: 0.75rem;
+}
+
+/* Tailwind v4 preflight leaves buttons with the default arrow cursor */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label:has(> input[type="radio"]),
+  label:has(> input[type="checkbox"]),
+  select {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+html {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+body {
+  color: var(--store-ink);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Store shell — prevents grid/flex children from widening the page */
+.main-container {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+/* Glassmorphism — footer & feature strips */
+.store-glass-panel {
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.store-glass-footer-wrap {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    160deg,
+    #0f0f12 0%,
+    #1a1a1f 45%,
+    #121218 100%
+  );
+}
+
+.store-glass-footer-wrap::before,
+.store-glass-footer-wrap::after {
+  content: "";
+  position: absolute;
+  width: 42%;
+  height: 55%;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.22;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.store-glass-footer-wrap::before {
+  top: -18%;
+  left: -8%;
+  background: var(--store-primary);
+}
+
+.store-glass-footer-wrap::after {
+  bottom: -22%;
+  right: -10%;
+  background: var(--store-accent);
+}
+
+.store-glass-footer-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* Footer v2 — deep navy + multi glow (TapGro-style) */
+.store-footer-premium {
+  position: relative;
+  overflow: hidden;
+  overflow-x: clip;
+  background: #050a12;
+  color: #d1d5db;
+}
+
+.store-glass-footer-top-card {
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.35);
+}
+
+.store-glass-newsletter {
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.store-feature-dark {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(165deg, #141418 0%, #0c0c10 50%, #101014 100%);
+}
+
+.store-feature-dark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 90% 60% at 10% 0%,
+    rgba(var(--store-primary-rgb), 0.14),
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+.store-glass-feature-card {
+  border-radius: var(--store-radius);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.store-container {
+  width: 100%;
+  max-width: 80rem;
+  min-width: 0;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .store-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* Public blog HTML from Tiptap (sanitized) */
+.blog-html :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--store-ink);
+  font-weight: 800;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.blog-html h1 {
+  font-size: 1.875rem;
+}
+.blog-html h2 {
+  font-size: 1.5rem;
+}
+.blog-html h3 {
+  font-size: 1.25rem;
+}
+.blog-html p {
+  margin-bottom: 1rem;
+}
+.blog-html ul,
+.blog-html ol {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.35rem;
+}
+.blog-html a {
+  color: var(--store-primary);
+  text-decoration: underline;
+}
+.blog-html img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 0.75rem 0;
+}
+.blog-html blockquote {
+  border-left: 4px solid var(--store-border);
+  padding-left: 1rem;
+  font-style: italic;
+  margin: 1rem 0;
+}
+.blog-html pre {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+.blog-html hr {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--store-border);
+}

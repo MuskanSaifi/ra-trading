@@ -1,0 +1,611 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import countriesData from "@/lib/countries.json" assert { type: "json" };
+import Image from "next/image";
+
+import { submitToPayu } from "@/lib/orderClient";
+
+export default function CheckoutClient() {
+  const router = useRouter();
+
+  const [user, setUser] = useState(null);
+  const [cartItems, setCartItems] = useState([]);
+  const [initialized, setInitialized] = useState(false);
+
+  const [countries] = useState(countriesData);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+
+  const [paymentMode, setPaymentMode] = useState("COD");
+  const [loading, setLoading] = useState(false);
+  const [sameAsProfile, setSameAsProfile] = useState(true);
+  const [deliveryCheck, setDeliveryCheck] = useState(null);
+  const [payOptions, setPayOptions] = useState({
+    payuEnabled: true,
+    codEnabled: true,
+  });
+
+  const [address, setAddress] = useState({
+    name: "",
+    phone: "",
+    alternatePhone: "",
+    street: "",
+    country: "India",
+    state: "",
+    city: "",
+    pincode: "",
+  });
+
+  useEffect(() => {
+    const u = JSON.parse(localStorage.getItem("user") || "null");
+    const c = JSON.parse(localStorage.getItem("cart") || "[]");
+
+    if (!u) {
+      router.push(`/login?redirect=/checkout`);
+      return;
+    }
+
+    setUser(u);
+    setCartItems(c);
+
+    const countryObj = countries.find((c) => c.name === (u.country || "India"));
+    setStates(countryObj?.states || []);
+
+    const stateObj = countryObj?.states?.find((s) => s.name === u.state);
+    setCities(stateObj?.cities || []);
+
+    setAddress({
+      name: u.name || "",
+      phone: u.phone || "",
+      alternatePhone: "",
+      street: u.address || "",
+      city: u.city || "",
+      state: u.state || "",
+      pincode: u.pincode || "",
+      country: u.country || "India",
+    });
+
+    setInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    const c = countries.find((x) => x.name === address.country);
+    setStates(c?.states || []);
+  }, [address.country]);
+
+  useEffect(() => {
+    const s = states.find((x) => x.name === address.state);
+    setCities(s?.cities || []);
+  }, [address.state]);
+
+  const codAllowed = useMemo(
+    () =>
+      payOptions.codEnabled !== false &&
+      cartItems.length > 0 &&
+      cartItems.every((i) => i.codAvailable !== false),
+    [cartItems, payOptions.codEnabled]
+  );
+
+  const payuAllowed = payOptions.payuEnabled !== false;
+
+  useEffect(() => {
+    fetch("/api/store/payment-options")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.success) {
+          setPayOptions({
+            payuEnabled: d.payuEnabled !== false,
+            codEnabled: d.codEnabled !== false,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!codAllowed && paymentMode === "COD" && payuAllowed) {
+      setPaymentMode("PayU");
+    }
+    if (!payuAllowed && paymentMode === "PayU" && codAllowed) {
+      setPaymentMode("COD");
+    }
+  }, [codAllowed, paymentMode, payuAllowed]);
+
+  const effectiveAddress = useMemo(() => {
+    if (!user) return address;
+    if (sameAsProfile) {
+      return {
+        name: user.name || "",
+        phone: user.phone || "",
+        alternatePhone: address.alternatePhone || "",
+        street: user.address || "",
+        country: user.country || "India",
+        state: user.state || "",
+        city: user.city || "",
+        pincode: user.pincode || "",
+      };
+    }
+    return address;
+  }, [user, sameAsProfile, address]);
+
+  const deliveryKey = useMemo(() => {
+    const a = effectiveAddress || {};
+    return `${a.country || ""}|${a.state || ""}|${a.city || ""}|${a.pincode || ""}`;
+  }, [effectiveAddress]);
+
+  const subtotal = cartItems.reduce((t, i) => t + i.price * i.quantity, 0);
+  const shipping = subtotal > 0 ? 99 : 0;
+  const total = subtotal + shipping;
+
+  const validatePhone = (v) => /^\d{10}$/.test(v);
+  const validatePincode = (v) => /^\d{6}$/.test(v);
+
+  const checkDelivery = async (addr) => {
+    const pin = String(addr?.pincode || "").replace(/\D/g, "");
+    if (!addr?.city || !addr?.country || !pin || pin.length !== 6) {
+      setDeliveryCheck(null);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/store/delivery/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: addr }),
+      });
+      const data = await res.json();
+      setDeliveryCheck({
+        ok: !!data.ok,
+        message: data.message,
+        suggestions: data.suggestions || [],
+      });
+    } catch {
+      // Silent: don't block checkout if check endpoint fails; server will validate again.
+      setDeliveryCheck(null);
+    }
+  };
+
+  // Auto-check delivery for both profile & custom address
+  useEffect(() => {
+    if (!initialized) return;
+    const t = setTimeout(() => {
+      checkDelivery(effectiveAddress);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [initialized, deliveryKey, sameAsProfile]);
+
+  const orderLineItems = () =>
+    cartItems.map((i) => ({
+      productId: i.productId || i._id,
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+    }));
+
+  const placeOrderRequest = async () => {
+    const res = await fetch("/api/user/order/place", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user._id,
+        address: effectiveAddress,
+        items: orderLineItems(),
+        totalAmount: total,
+        paymentMode,
+      }),
+    });
+    return res.json();
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!cartItems.length) return alert("Cart empty.");
+
+    const addr = effectiveAddress;
+    if (!validatePhone(addr.phone)) return alert("Enter valid phone.");
+    if (addr.alternatePhone && !validatePhone(addr.alternatePhone))
+      return alert("Invalid alternate phone.");
+    if (!validatePincode(addr.pincode)) return alert("Invalid pincode.");
+    if (!addr.name || !addr.street || !addr.city || !addr.state)
+      return alert("Fill all required shipping info.");
+
+    if (deliveryCheck && deliveryCheck.ok === false) {
+      return alert(
+        (deliveryCheck.message || "We do not deliver to this location yet.") +
+          (deliveryCheck.suggestions?.length
+            ? ` Suggested pincodes: ${deliveryCheck.suggestions
+                .slice(0, 5)
+                .map((s) => s.pincode)
+                .join(", ")}`
+            : "")
+      );
+    }
+
+    if (paymentMode === "COD" && !codAllowed) {
+      return alert("COD is not available for items in your cart. Please pay online.");
+    }
+
+    if (paymentMode === "PayU") {
+      setLoading(true);
+      try {
+        const data = await placeOrderRequest();
+        if (!data.success || !data.payu) {
+          alert(data.message || "Could not start payment");
+          setLoading(false);
+          return;
+        }
+        // Cart is cleared on /payment-status after PayU confirms the payment
+        submitToPayu(data.payu);
+      } catch {
+        alert("Could not start payment.");
+        setLoading(false);
+      }
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await placeOrderRequest();
+      if (data.success) {
+        localStorage.removeItem("cart");
+        window.dispatchEvent(new CustomEvent("cartUpdated", { detail: 0 }));
+        alert("Order Placed Successfully!");
+        router.push("/user-dashboard/orders");
+      } else {
+        alert(data.message || "Something went wrong.");
+      }
+    } catch {
+      alert("Server error, try again.");
+    }
+    setLoading(false);
+  };
+
+  if (!initialized)
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <p className="text-lg text-gray-600">Preparing checkout...</p>
+      </div>
+    );
+
+  return (
+    <div className="min-h-screen bg-[var(--store-surface)] py-10 px-4 flex justify-center">
+      <div className="max-w-6xl w-full bg-white rounded-2xl shadow-xl p-8">
+        <h1 className="text-4xl font-bold text-[var(--store-ink)] mb-8 text-center">
+          Checkout 🛍️
+        </h1>
+
+        <div className="grid md:grid-cols-2 gap-10">
+          <div>
+            <div className="flex justify-between">
+              <h2 className="text-2xl font-semibold mb-4">Shipping Details</h2>
+
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold">
+                  {sameAsProfile ? "Using Profile" : "Edit Address"}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setSameAsProfile(!sameAsProfile)}
+                  className={`w-12 h-7 rounded-full p-1 cursor-pointer transition-all flex items-center border-0
+                    ${sameAsProfile ? "bg-[var(--store-primary)]" : "bg-gray-300"}`}
+                  aria-pressed={sameAsProfile}
+                >
+                  <span
+                    className={`w-5 h-5 rounded-full bg-white shadow-md transition-all block
+                      ${sameAsProfile ? "ml-5" : "ml-0"}`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {sameAsProfile ? (
+              <div className="space-y-1 bg-[var(--store-primary-soft)] p-4 rounded-lg border border-[var(--store-border)]">
+                <p>{user.name}</p>
+                <p>📞 {user.phone}</p>
+                <p>{user.address}</p>
+                <p>
+                  {user.city}, {user.state} - {user.pincode}
+                </p>
+                <p>{user.country}</p>
+
+                {deliveryCheck && (
+                  <div
+                    className={`mt-3 rounded-lg border p-3 text-sm ${
+                      deliveryCheck.ok
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-amber-200 bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    <p className="font-semibold">
+                      {deliveryCheck.ok ? "Delivery available" : "Not serviceable"}
+                    </p>
+                    <p className="mt-1">{deliveryCheck.message}</p>
+                    {!deliveryCheck.ok && deliveryCheck.suggestions?.length > 0 && (
+                      <p className="mt-2 text-xs">
+                        Suggestions:{" "}
+                        {deliveryCheck.suggestions
+                          .slice(0, 6)
+                          .map((s) => `${s.city} - ${s.pincode}`)
+                          .join(", ")}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <input
+                  placeholder="Full Name"
+                  value={address.name}
+                  onChange={(e) =>
+                    setAddress({ ...address, name: e.target.value })
+                  }
+                  className="w-full border p-3 rounded-lg"
+                />
+
+                <input
+                  placeholder="Phone (10 digits)"
+                  value={address.phone}
+                  maxLength={10}
+                  onChange={(e) =>
+                    setAddress({
+                      ...address,
+                      phone: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                  className={`w-full border p-3 rounded-lg ${
+                    validatePhone(address.phone) ? "" : "border-red-500"
+                  }`}
+                />
+
+                <input
+                  placeholder="Alternate Phone"
+                  value={address.alternatePhone}
+                  maxLength={10}
+                  onChange={(e) =>
+                    setAddress({
+                      ...address,
+                      alternatePhone: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                  className="w-full border p-3 rounded-lg"
+                />
+
+                <input
+                  placeholder="Street Address"
+                  value={address.street}
+                  onChange={(e) =>
+                    setAddress({ ...address, street: e.target.value })
+                  }
+                  className="w-full border p-3 rounded-lg"
+                />
+
+                <select
+                  value={address.country}
+                  onChange={(e) =>
+                    setAddress({ ...address, country: e.target.value })
+                  }
+                  className="w-full border p-3 rounded-lg"
+                >
+                  {countries.map((c) => (
+                    <option key={c.name} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={address.state}
+                  onChange={(e) =>
+                    setAddress({ ...address, state: e.target.value })
+                  }
+                  className="w-full border p-3 rounded-lg"
+                >
+                  <option>Select State</option>
+                  {states.map((s) => (
+                    <option key={s.name} value={s.name}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={address.city}
+                  onChange={(e) =>
+                    setAddress({ ...address, city: e.target.value })
+                  }
+                  className="w-full border p-3 rounded-lg"
+                >
+                  <option>Select City</option>
+                  {cities.map((c, idx) => (
+                    <option key={idx} value={c.name || c}>
+                      {c.name || c}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  placeholder="Pincode"
+                  value={address.pincode}
+                  maxLength={6}
+                  onChange={(e) =>
+                    setAddress({
+                      ...address,
+                      pincode: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                  onBlur={() => checkDelivery({ ...address })}
+                  className={`w-full border p-3 rounded-lg ${
+                    validatePincode(address.pincode) ? "" : "border-red-500"
+                  }`}
+                />
+
+                {deliveryCheck && (
+                  <div
+                    className={`rounded-lg border p-3 text-sm ${
+                      deliveryCheck.ok
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-amber-200 bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    <p className="font-semibold">
+                      {deliveryCheck.ok ? "Delivery available" : "Not serviceable"}
+                    </p>
+                    <p className="mt-1">{deliveryCheck.message}</p>
+                    {!deliveryCheck.ok && deliveryCheck.suggestions?.length > 0 && (
+                      <p className="mt-2 text-xs">
+                        Suggestions:{" "}
+                        {deliveryCheck.suggestions
+                          .slice(0, 6)
+                          .map((s) => `${s.city} - ${s.pincode}`)
+                          .join(", ")}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="md:sticky md:top-28 md:self-start">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-semibold">Order Summary</h2>
+              <a href="/cart" className="text-sm font-medium text-[var(--store-primary)] hover:underline">
+                Edit cart
+              </a>
+            </div>
+
+            <div className="space-y-3">
+              {cartItems.map((i) => (
+                <div key={i._id} className="flex justify-between border-b pb-2">
+                  <div className="flex gap-3 items-center">
+                    <div
+                      className="w-16 h-16 rounded overflow-hidden"
+                      style={{ backgroundColor: i.imageBgColor || "#ffffff" }}
+                    >
+                      <Image
+                        src={i.image || "/placeholder.png"}
+                        alt={i.name || "Cart item"}
+                        width={96}
+                        height={96}
+                        className="w-full h-full object-cover"
+                        sizes="64px"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-medium">{i.name}</p>
+                      <p className="text-gray-600 text-sm">Qty: {i.quantity}</p>
+                      {(i.minOrder || 1) > 1 && (
+                        <p className="text-xs text-amber-700">
+                          Min. order qty: {i.minOrder || 1}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <p className="font-semibold text-gray-700">
+                    ₹{(i.price * i.quantity).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 border-t pt-4 space-y-2 text-gray-700">
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>₹{subtotal.toLocaleString()}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span>Shipping:</span>
+                <span>₹{shipping}</span>
+              </div>
+
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total:</span>
+                <span>₹{total.toLocaleString()}</span>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                <p className="text-sm font-semibold text-gray-800">Payment method</p>
+                <div className="space-y-2">
+                  {[
+                    payuAllowed && {
+                      value: "PayU",
+                      title: "Pay online",
+                      desc: "UPI, debit/credit card, or netbanking via PayU",
+                    },
+                    codAllowed && {
+                      value: "COD",
+                      title: "Cash on delivery",
+                      desc: "Pay when the order is delivered",
+                    },
+                  ]
+                    .filter(Boolean)
+                    .map((opt) => (
+                      <label
+                        key={opt.value}
+                        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+                          paymentMode === opt.value
+                            ? "border-[var(--store-primary)] bg-[var(--store-primary)]/5 ring-1 ring-[var(--store-primary)]"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMode"
+                          value={opt.value}
+                          checked={paymentMode === opt.value}
+                          onChange={() => setPaymentMode(opt.value)}
+                          className="mt-1 accent-[var(--store-primary)]"
+                        />
+                        <span>
+                          <span className="block text-sm font-semibold text-gray-900">{opt.title}</span>
+                          <span className="block text-xs text-gray-500">{opt.desc}</span>
+                        </span>
+                      </label>
+                    ))}
+                </div>
+                {!codAllowed && payuAllowed && (
+                  <p className="text-xs text-amber-800">
+                    COD is disabled because at least one product is online-payment only.
+                  </p>
+                )}
+                {!payuAllowed && !codAllowed && (
+                  <p className="text-xs text-red-700">
+                    No payment methods available. Contact support.
+                  </p>
+                )}
+              </div>
+
+              <p className="text-xs text-gray-500 leading-5">
+                By placing this order you agree to our{" "}
+                <a href="/terms-and-conditions" className="underline">Terms</a>,{" "}
+                <a href="/privacy-policy" className="underline">Privacy Policy</a>,{" "}
+                <a href="/refund-and-return-policy" className="underline">Refund &amp; Return Policy</a>, and{" "}
+                <a href="/cancellation-policy" className="underline">Cancellation Policy</a>.
+              </p>
+
+              <button
+                type="button"
+                onClick={handlePlaceOrder}
+                disabled={loading || !cartItems.length}
+                className="w-full mt-4 rounded-xl bg-[var(--store-primary)] py-3.5 text-base font-bold text-white shadow-md transition hover:bg-[var(--store-primary-dark)] disabled:opacity-60"
+              >
+                {loading
+                  ? paymentMode === "PayU"
+                    ? "Opening payment…"
+                    : "Placing order..."
+                  : paymentMode === "PayU"
+                    ? `Pay ₹${total.toLocaleString("en-IN")}`
+                    : `Place order · ₹${total.toLocaleString("en-IN")}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

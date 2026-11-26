@@ -139,7 +139,7 @@ export default function SendNotificationPage() {
     <div className="space-y-6 p-4 md:p-6">
       <PageHeader
         title="Send notification"
-        description="Broadcast a message to customers. It appears in the RA Trading app Notifications screen and as a push alert when the customer has notifications enabled."
+        description="Broadcast to customers. They see it in the app inbox and as a phone system notification (tray). Customer must be logged in on the app and have allowed notifications."
         actions={
           <Link
             href="/admin-dashboard/notifications"
